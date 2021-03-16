@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>iOS 10 Today 的适配</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/ios_10_today/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/ios_10_today/">iOS 10 Today 的适配</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<h3 id="ncwidgetproviding">NCWidgetProviding</h3>
+
+<pre>
+- (void)widgetActiveDisplayModeDidChange:(NCWidgetDisplayMode)activeDisplayMode withMaximumSize:(CGSize)maxSize NS_AVAILABLE_IOS(10_0);
+</pre>
+
+<p>这是iOS10新出的API，today多了展开和折叠两种模式，当模块发生改变之后就会调用这个方法。</p>
+
+<p>activeDisplayMode 为NCWidgetDisplayModeCompact 、NCWidgetDisplayModeExpanded， maxSize为today的最大支持的size。</p>
+
+<p>activeDisplayMode还可以通过self.extensionContext.widgetActiveDisplayMode获得</p>
+
+<p>maxSize可以通过[self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeExpanded]获得。</p>
+
+<p>当然 [self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeCompact]获得折叠下的最小支持size。</p>
+
+<p>widgetActiveDisplayMode是一个只读变量，与此还有一个widgetLargestAvailableDisplayMode属性，NCWidgetDisplayModeCompact 表示不支持折叠和展开，只能是折叠模式了，需要设置为</p>
+
+<pre>
+self.extensionContext.widgetLargestAvailableDisplayMode = NCWidgetDisplayModeExpanded;
+</pre>
+
+<p>才支持折叠和展开</p>
+
+<p>最小支持</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>iPhone5</th>
+      <th>iPhone6</th>
+      <th>iPhone6 P</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>竖屏</td>
+      <td>304(width,就是两边为8),110(height)</td>
+      <td>359,110</td>
+      <td>398,110</td>
+    </tr>
+    <tr>
+      <td>横屏</td>
+      <td>420,110</td>
+      <td>420,110</td>
+      <td>420,110</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>最大支持</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>iPhone5</th>
+      <th>iPhone6</th>
+      <th>iPhone6 P</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>竖屏</td>
+      <td>[锁屏进入]，(width)304,(height)528;[通知栏下拉]304,396</td>
+      <td>[锁屏进入]359,616;[通知栏下拉]359,528</td>
+      <td>[锁屏进入]398,660;[通知栏下拉]398,572</td>
+    </tr>
+    <tr>
+      <td>横屏</td>
+      <td>[锁屏进入]420,高度待测试;[通知栏下拉]420,176</td>
+      <td>[锁屏进入]420,高度待测试;[通知栏下拉]420,220</td>
+      <td>[锁屏进入]420,352;[通知栏下拉]420,264</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>注意的是iOS10 today有三个入口就是，锁屏，iPhone home的第一个tab页面，通知栏下拉，前两个对高度的限制是一样的且会宽松一些，通知栏下拉则对高度限制严格些，一般来说不能超出当前屏幕显示范围。</p>
+
+<h3 id="today布局">today布局</h3>
+
+<p>today 默认是 storyboard布局的，如果想要使用代码布局。需要把today中Info.plist的</p>
+
+<pre>
+&lt;key&gt;NSExtension&lt;/key&gt;
+&lt;dict&gt;
+&lt;key&gt;NSExtensionMainStoryboard&lt;/key&gt;
+&lt;string&gt;MainInterface&lt;/string&gt;
+&lt;key&gt;NSExtensionPointIdentifier&lt;/key&gt;
+&lt;string&gt;com.apple.widget-extension&lt;/string&gt;
+&lt;/dict&gt;
+</pre>
+<p>修改为</p>
+<pre>
+&lt;key&gt;NSExtension&lt;/key&gt;
+&lt;dict&gt;
+&lt;key&gt;NSExtensionMainStoryboard&lt;/key&gt;
+&lt;string&gt; NSExtensionPointIdentifier&lt;/string&gt;
+&lt;key&gt;NSExtensionPointIdentifier&lt;/key&gt;
+&lt;string&gt;com.apple.widget-extension&lt;/string&gt;
+&lt;/dict&gt;
+</pre>
+
+<h3 id="调起app">调起app</h3>
+
+<p>通过</p>
+
+<pre>
+[self.extensionContext openURL:[NSURL URLWithString:urlString] completionHandler:^(BOOL success) { 
+NSLog(@"open url result:%d",success); 
+}];
+</pre>
+
+<p>就可以调起app了，</p>
+
+<p>然后在app端的appdelegate里面下面方法接收。</p>
+<pre>
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(nullable NSString *)sourceApplication annotation:(id)annotation
+
+</pre>
+<h3 id="数据共享">数据共享</h3>
+
+<p>app 和 today都有各自的空间，但也有共享的空间group。</p>
+
+<p>通过NSUserDefaults共享数据</p>
+
+<pre>
+NSUserDefaults *shared = [[NSUserDefaults alloc] initWithSuiteName:@"group.c
+om.xxx"];
+</pre>
+
+<p>可以通过这个userdefaults读写group的数据，suiteName是需要在capabilities里面配置的，userdefaults和filemanager是共用的。</p>
+
+<pre>
+NSURL *containerURL = [[NSFileManager defaultManager] containerURLForSecuri
+tyApplicationGroupIdentifier:@"group.com.xxx"]; 
+</pre>
+
+<p>而NSFileManager则可以通过上面的url进行读写。</p>
+
+<h3 id="代码共享">代码共享</h3>
+
+<p>如果一个文件需要在today和app内都用的话，则只要.m文件的targetmembership勾选两个就可以了。</p>
+
+<p>如果 在你的工程里面有自己的其他 framework target。 如果你想用这个target里面文件，则可以在这个target的general里面勾选allow app extension API only。</p>
+
+<p>如果对于一个类app和extension都可以调用，但是你其中的某些代码块想区分。</p>
+
+<p>你可以在today target里面添加宏定义 ，Build Settings - Preprocessor Macros下面添加</p>
+
+<pre>
+TARGET_IS_EXTENSION=1
+</pre>
+
+<p>使用的话就是</p>
+
+<pre>
+#ifndef TARGET_IS_EXTENSION
+
+#endif
+</pre>
+
+<h3 id="ios-10-支持的设备">iOS 10 支持的设备</h3>
+
+<pre>
+iPhone 7
+iPhone 7 Plus
+iPhone 6s
+iPhone 6s Plus
+iPhone 6
+iPhone 6 Plus
+iPhone SE
+iPhone 5s
+iPhone 5c
+iPhone 5
+
+iPad Pro 12.9 英寸
+iPad Pro 9.7 英寸
+iPad Air 2
+iPad Air
+iPad 第四代
+iPad mini 4
+iPad mini 3
+iPad mini 2
+
+iPod touch 第六代
+</pre>
+
+<p><img src="https://raw.githubusercontent.com/coderyi/blog/master/other/images/ios10_support_device.png" alt="" /></p>
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2016-10-10
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#iOS10-ref" >Ios10</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

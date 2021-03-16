@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>iOS开发路线简述</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/iOS_learn_path/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/iOS_learn_path/">iOS开发路线简述</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>文章更新于2015/3/9</p>
+
+<p>iOS系统以及iPhone的出来都要感谢乔布斯，一个完美主义者，从如此优秀的iOS系统和iPhone就可以看出来。下面就简单介绍一下我iOS开发的感受，也是学习iOS开发的一个体系架构。</p>
+
+<p><strong><span style="color: #3d82c6;">1 iOS开发环境</span></strong></p>
+
+<p><strong>1.1 开发环境</strong></p>
+
+<p>标准的配置是MacOSX+Xcode。</p>
+
+<p>MacOSX的话首选用苹果电脑，Macmini最便宜只要4000多就好了然后自己配一个显示器，MacBookPro 也可以，不推荐使用MacBookAir。还有很多人使用黑苹果或者虚拟机甚至在Windows上装一些工具都是不可取的。</p>
+
+<p>另外官翻版的也可以去买，很便宜就可以买到好机子，<a title="官翻版" href="http://store.apple.com/cn/browse/home/specialdeals">官翻版</a>。</p>
+
+<p>Xcode这个开发工具自己继承了iPhoneSDK，所以不用单独下载SDK。调试的模拟器可以从Xcode里面下载不同版本的模拟器。</p>
+
+<p><strong>1.2 账号 证书 上架 等</strong></p>
+
+<p>iOS调试真机是需要证书的，所以这个时候需要从申请一个iDP账号，不过仅仅需要调试的话，某宝上有很多卖20几块的证书。应用上传AppStore的话有很多种方法，证书分为299$和99$，99$的可以到AppStore，299$是不可以的。</p>
+
+<p><strong><span style="color: #3d82c6;">2 Obejctive-C语言</span></strong></p>
+
+<p>Obejctive-C语言是根据C语言所衍生出来的语言，继承了C语言的特性，是扩充C的面向对象编程语言，它能够和C、C++混合编程。Obejctive-C是一个编译型的语言，通过GCC编译器把Obejctive-C代码编译成机器指令。关于基本概念可以参考，<a title="十分钟让你明白Objective-C的语法（和Java、C++的对比）" href="http://blog.csdn.net/totogo2010/article/details/7632384">十分钟让你明白Objective-C的语法（和Java、C++的对比）</a> 。</p>
+
+<p>对于Swift这门新的语言，我暂时还没有去涉及，建议还是学学Obejctive-C。</p>
+
+<p><strong>2.1动态特性</strong></p>
+
+<p>Obejctive-C具备一些动态特性，包括动态类型、动态绑定、动态加载，也就是Obejctive-C在运行时才能知道一些对象的类型以及所调用的方法。</p>
+
+<p><strong>2.2内存管理</strong></p>
+
+<p>Obejctive-C是使用引用计数原则，现在Obejctive-C引入ARC（自动引用计数原则）。引用计数有几个规则，一是谁创建谁释放，通过alloc、new和copy创建对象，然后调用release或者autorelease去释放对象，第二是，除了alloc、new和copy之外创建的对象都是autorelease的，第三谁retain了，谁释放。</p>
+
+<p><strong>2.3 一些语言特性</strong></p>
+
+<p>Obejctive-C首先是只有单一继承，没有多重继承。</p>
+
+<p>属性访问，@property加上@synthesize使用后能够自动生成setter和getter方法。</p>
+
+<p>Category，中文一般叫做类别，他能够为现有的类提供新的方法，他将类的实现分散到多个不同的文件或框架中，创建对私有方法的前向引用，向对象添加非正式协议。</p>
+
+<p>block语法，块，他通常代表小段的自包含的代码片段，因此，他们封装为可以并行执行的工作单元额外有用，还可以用于在集合中进行遍历，或者在其他操作完成时作为回调。块代替传统回调函数的意义有两个：一是他们允许在方法实现的调用中就近写入代码，而且块经常被作为框架中一些方法的参数；二是他们可以访问本地变量。</p>
+
+<p>Obejctive-C中有很多类是以NS开头的，那是Cocoa层里面Foundation框架的类库。</p>
+
+<p><span style="color: #3d82c6;"><strong>3 iOS开发</strong></span></p>
+
+<p><strong>3.1 iOS操作系统简介</strong></p>
+
+<p>iOS的系统架构分为四个层次：核心操作系统层（Core OS layer）、核心服务层（Core Services layer）、媒体层（Media layer）和可触摸层（Cocoa Touch layer）。每层都包含很多系统框架，例如著名的UIKit框架就是在Cocoa Touch。</p>
+
+<p><strong>3.2 MVC与常用的设计模式</strong></p>
+
+<p>MVC并不是一种设计模式，它是一种软件架构模式，就是把项目分为Model、View和Controller三层进行管理。</p>
+
+<p>常用的设计模式有代理模式，通过协议和block实现。观察者模式的话体现在了KVO和NSNotification上了。Target-Action模式是Objective-C中非常常见的对象之间方法调用的方式，一般在和UI打交道的时候处理各种GUI上的事件会利用到这种模式，他通常会有一个Target作为消息的接收者。单例模式，使得单例对象在项目中只会创建一次。工厂模式，是一个类族的概念，很符合敏捷软件开发的开放封闭原则。关于各种设计模式，可以看<a title="卡奴达摩的专栏" href="http://blog.csdn.net/zhengzhb/article/category/926691/2">卡奴达摩的专栏</a>。</p>
+
+<p><strong>3.3 Interface Builder和Storyboard</strong></p>
+
+<p>一般写iOS的UI有三种方式。xib，Storyboard以及代码创建。</p>
+
+<p>我之前自学用了一会的xib，之后一直用代码创建，代码更容易区做多语言版本，而且
+xib启动需要事件比用代码直接写慢，xib文件比代码建立UI文件也大。</p>
+
+<p>具体对比可以看喵神的博客<a title="代码手写UI，xib和StoryBoard间的博弈" href="http://onevcat.com/2013/12/code-vs-xib-vs-storyboard/">代码手写，xib和StoryBoard间的博弈</a></p>
+
+<p><strong>3.4 常用系统框架和第三方库</strong></p>
+
+<p>UIKit是最常用的框架，主要是用来做UI的。包括视图UIButton、UILabel，控制器UIViewController等，还有一些触摸事件、手势等。</p>
+
+<p>QuartzCore、CoreAnimation框架是一些绘图、动画的类库。</p>
+
+<p>第三方库的话，可以查看GitHub上Objective-C的仓库排名，<a title="Search - GitHub" href="https://github.com/search?l=&amp;o=desc&amp;q=stars%3A%3E1000+language%3AObjective-C&amp;s=stars&amp;type=Repositories">Search - GitHub</a> 。</p>
+
+<p><strong>3.5数据存储</strong></p>
+
+<p>iOS数据存储主要有四种方式。</p>
+
+<p>NSKeyedArchiver，采用归档的形式来保存数据，该数据对象需要遵守NSCoding协议。归档形式保存数据只能一次性归档保存以及一次性解压，只能针对小量谁，而且数据操作笨拙，即如果想改动数据的某一小部分，需要解压整个数据或者归档整个数据。</p>
+
+<p>NSUserDefaults，用来保存应用程序设置和属性。</p>
+
+<p>第三种，Write写入文件。</p>
+
+<p>第四种，相对前两种更为复杂，但也最好用。SQLite，可以自己封装，也可以使用FMDB等第三方封装库，还可以使用系统的CoreData。</p>
+
+<p><strong>3.6数据通信</strong></p>
+
+<p>iOS的数据通信有几种方式，应用层的HTTP，以及传输层的封装TCP或者UDP的Socket接口，还有就是蓝牙通讯。</p>
+
+<p>HTTP的网络服务一般可以用post、get或者SOAP等方式请求数据，可以用系统的NSURL也可以用第三方类库（MKNetWorkKit、AFNetWorking），这两种类库都可以做缓存，数据交换的格式一般有JSON和XML。</p>
+
+<p>Socket可以通过C语言的Socket和CoreFoundation框架的CFNetwork实现，也可以用第三方类库AsyncSocket。</p>
+
+<p>蓝牙4.0的话使用的是CoreBluetooth框架。</p>
+
+<p><strong>3.7多线程编程</strong></p>
+
+<p>iOS的多线程有NSThread、NSOperation以及GCD。NSThread比其他两个轻量级，但是需要自己管理线程的生命周期，线程同步。线程同步对数据加锁会有一定的系统开销。NSOperation则不需要关心线程管理，GCD是一个替代NSThread和NSOperation的技术。</p>
+
+<p><strong>3.8iPad开发</strong></p>
+
+<p>iPad和iPhone开发是异曲同工，但是不要试图去适配iPad和iPhone，因为他们的UI差别太大。</p>
+
+<p><strong>3.9其他</strong></p>
+
+<p>iOS的地图是使用MapKit框架，定位用CoreLocation。</p>
+
+<p>iOS有一个云端机制iCloud，iOS还有一个推送机制，可以由服务器推送消息到手机应用程序，iOS还可以做本地化。</p>
+
+<p>iOS有一些内置的传感器可以利用起来编程，比如三轴加速传感器，用来测加速度的，还有陀螺感应器，测角速度，感知移动的。</p>
+
+<p>关于iOS的相机、相册以及音视频都有相应的类库。</p>
+
+<p><strong><span style="color: #3d82c6;">4 工具</span></strong></p>
+
+<p>第一是多人协作的问题，你可以用SVN或者Git，Git是比较流行的，但是大多数的公司还在用SVN；</p>
+
+<p>第二，iOS的数据持久化有很多方案，最高效的就是SQLite，在Mac上有很多SQLite的可视化管理工具，我用的是SQLiteManager。</p>
+
+<p>第三，关于查看模拟器或者真机的沙盒内容，模拟器可以使用SimPholders，真机可以用iFunBox；屏幕取色工具，Sip。</p>
+
+<p>第四，关于抓包工具Charles很多人喜欢用，巧神有很详细的介绍，<a title="网络封包分析工具Charles" href="http://blog.devtang.com/blog/2013/12/11/network-tool-charles-intr/">网络封包分析工具Charles</a>。</p>
+
+<p>第五，另外Xcode也可以安装很多辅助工具，例如，第三方库管理工具CocoaPods，压力测试工具UIAutoMonkey。</p>
+
+<p>第六，Xcode也可以安装很多插件，首先介绍一个插件管理的插件Alcatraz，用它来下载以及管理所有插件，我常用的插件有，格式化Xcode代码的ClangFormat，图片资源提示的KSImageNamed，颜色辅助ColorSense等。</p>
+
+<p>第七，移动开发有一些常用的平台的，比提供社会化分享、统计分析等的友盟，ShareSDK；内测平台FIR.im,蒲公英；云测平台Testin；广告平台Google的AdMob</p>
+
+<p><strong><span style="color: #3d82c6;">5 书籍 网站推荐</span></strong></p>
+
+<p>关于看书，对于某一个东西入门的话，其实不适合看书，或者你想看随便挑一本入门的书就跟着看就好了。</p>
+
+<p>不过后期要精通我觉得几乎应该把所有iOS好的书看完，我在知乎曾问过有什么iOS进阶的书，这个回答非常中肯，<a title="有什么iOS进阶的书推荐吗?" href="http://www.zhihu.com/question/28491905/answer/41016963">有什么iOS进阶的书推荐吗?</a></p>
+
+<p><a title="Code4App" href="http://www.code4app.com/">Code4App</a>，<a title="iOS开发社区 - 开源中国社区" href="http://www.oschina.net/ios/home">iOS开发社区 - 开源中国社区</a>，<a title="CocoaChina" href="http://www.cocoachina.com/">CocoaChina</a>是国内常用的三大代码库网站，国外有，技术问答<a href="http://stackoverflow.com/" title="stackoverflow.com">StackOverflow</a>，代码库<a href="https://www.cocoacontrols.com/" title="CocoaControls">CocoaControls</a>，版本控制的网站<a title="github" href="https://github.com/">GitHub</a>,并且欢迎关注我的GitHub，<a title="coderyi" href="https://github.com/coderyi">https://github.com/coderyi</a></p>
+
+<p>这里有一个别人整理的iOS学习资料，</p>
+
+<p><a title="马上着手开发 iOS 应用程序" href="https://developer.apple.com/library/prerelease/ios/referencelibrary/GettingStarted/RoadMapiOSCh/index.html">马上着手开发 iOS 应用程序</a> （apple官方整理），</p>
+
+<p><a title="Aufree/trip-to-iOS · GitHub" href="https://github.com/Aufree/trip-to-iOS">Aufree/trip-to-iOS · GitHub</a>（资料最全） ，</p>
+
+<p><a title="iOS资源 - Code4App.com" href="http://code4app.com/resource">iOS资源 - Code4App.com</a> ，
+<a title="iOS开发60分钟入门" href="https://github.com/qinjx/30min_guides/blob/master/ios.md">iOS开发60分钟入门</a> ，</p>
+
+<p><a title="iOS开发从新手到上架" href="http://www.cocoachina.com/special/fornew.html">iOS开发从新手到上架</a>，</p>
+
+<p><a title="iOS开发路线简述" href="http://www.coderyi.com/archives/397">iOS开发路线简述</a>，</p>
+
+<p><strong><span style="color: #3d82c6;">6 iOS学习路线图</span></strong></p>
+
+<p>最后附赠一张传智播客的iOS学习路线图(<a title="原图链接" href="http://www.cnblogs.com/mjios/archive/2013/02/26/2933200.html">原图链接</a>) ，这一些东西只是iOS开发的冰山一角，哪一东西要做好都要学很多东西，学好最重要的就是你对他的热情，路漫漫其修远兮，吾将上下而求索。</p>
+
+<p><img class="" src="http://7u2k5i.com1.z0.glb.clouddn.com/coderyi_iosdevstudy.jpg" alt="iosdevstudy" width="599" height="898" /></p>
+
+<p>转载附上原文链接<a title="https://github.com/coderyi/blog/blob/master/articles/2015/0216_iOS.md" href="https://github.com/coderyi/blog/blob/master/articles/2015/0216_iOS.md">https://github.com/coderyi/blog/blob/master/articles/2015/0216_iOS.md</a></p>
+
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2015-02-16
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#Objective-C-ref" >Objective-c</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

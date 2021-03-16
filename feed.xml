@@ -1,0 +1,2803 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>coderyi</title>
+    <description>生命不止，折腾不息</description>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Thu, 21 Nov 2019 14:32:03 +0800</pubDate>
+    <lastBuildDate>Thu, 21 Nov 2019 14:32:03 +0800</lastBuildDate>
+    <generator>Jekyll v4.0.0</generator>
+    
+      <item>
+        <title>Weex学习与实践(三):iOS原理篇</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex1/&quot;&gt;Weex学习与实践(一):Weex,你需要知道的事&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex2/&quot;&gt;Weex学习与实践(二):iOS集成的tips&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex3/&quot;&gt;Weex学习与实践(三):iOS原理篇&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;本文主要介绍包括WeexSDK-iOS主要类介绍、Weex页面iOS端渲染流程、JS调用iOS方法&lt;/p&gt;
+
+&lt;h3 id=&quot;主要类&quot;&gt;主要类&lt;/h3&gt;
+
+&lt;h4 id=&quot;wxsdkengine&quot;&gt;WXSDKEngine&lt;/h4&gt;
+
+&lt;p&gt;WXSDKEngine主要用于初始化WeexSDK的环境&lt;/p&gt;
+
+&lt;p&gt;一开始会载入配置文件main.js并且注册一些默认的组件、模块以及handler&lt;/p&gt;
+
+&lt;pre&gt;
++ (void)initSDKEnviroment:(NSString *)script
+{
+   
+    [self _registerDefaultComponents];
+    [self _registerDefaultModules];
+    [self _registerDefaultHandlers];
+    
+    [[WXSDKManager bridgeMgr] executeJsFramework:script];
+}
+
+&lt;/pre&gt;
+
+&lt;p&gt;在executeJsFramework前，会设置后JSContext的一些回调，例如&lt;/p&gt;
+&lt;pre&gt;
+    _jsContext[@&quot;callNative&quot;] = callNativeBlock;
+&lt;/pre&gt;
+&lt;p&gt;以方便JS调用native的方法。&lt;/p&gt;
+
+&lt;p&gt;executeJsFramework调用的是JSContext的evaluateScript方法，把main.js运行到jS的环境里面，之后再通过JSValue调用invokeMethod方法，把前面所有的components，modules，handlers注册进入JS环境&lt;/p&gt;
+
+&lt;h4 id=&quot;wxsdkinstance&quot;&gt;WXSDKInstance&lt;/h4&gt;
+
+&lt;p&gt;一个WXSDKInstance就对应一个UIViewController,对应一个weex页面。&lt;/p&gt;
+
+&lt;p&gt;主要用来渲染页面,一般通过renderWithURL方法，然后能够接收一些回调和一些视图相关的方法&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;onCreate //根视图rootView创建的时候
+renderFinish//视图渲染完成
+componentForRef //通过视图索引拿到对应的组件视图
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;wxbridgemanager&quot;&gt;WXBridgeManager&lt;/h4&gt;
+
+&lt;p&gt;WXBridgeManager 是JS与iOS通过JSCore交互的类,相关的类还有WXBridgeContext、WXJSCoreBridge。&lt;/p&gt;
+
+&lt;p&gt;比如调用JS&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+- (void)executeJsMethod:(WXBridgeMethod *)method
+{
+    if (!method) return;
+    
+    __weak typeof(self) weakSelf = self;
+    WXPerformBlockOnBridgeThread(^(){
+        [weakSelf.bridgeCtx executeJsMethod:method];
+    });
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;JS调用native的话需要通过WXJSCoreBridge的registerCallNative方法&lt;/p&gt;
+
+&lt;h4 id=&quot;wxcomponent&quot;&gt;WXComponent&lt;/h4&gt;
+
+&lt;p&gt;组件基类，自己实现iOS端的组件需要继承它。相关的还有负责组件初始化的工厂类WXComponentFactory，以及WXComponentManager&lt;/p&gt;
+
+&lt;h4 id=&quot;wxmoduleprotocol&quot;&gt;WXModuleProtocol&lt;/h4&gt;
+
+&lt;p&gt;自定义module需要实现的协议&lt;/p&gt;
+
+&lt;h3 id=&quot;weex页面ios端渲染流程&quot;&gt;weex页面iOS端渲染流程&lt;/h3&gt;
+
+&lt;p&gt;首先在ViewController里的render放初始化WXSDKInstance，因为render会支持实时刷新，所以每次都需要先销毁这个实例。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [_instance destroyInstance];
+    _instance = [[WXSDKInstance alloc] init];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后WXSDKManager会保存instanceId&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        [WXSDKManager storeInstance:self forID:_instanceId];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后会调用renderWithURL方法来载入script,在这里会判断是本地文件还是需要从服务器下载，&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
+	    if ([url isFileURL]) {
+        //from local
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSString *path = [url path];
+            NSData *scriptData = [[NSFileManager defaultManager] contentsAtPath:path];
+            NSString *script = [[NSString alloc] initWithData:scriptData encoding:NSUTF8StringEncoding];
+            [weakSelf renderView:script options:newOptions data:data];
+        });
+    }else{
+    	//from server
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后就会根据script文件渲染视图&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[weakSelf renderView:script options:newOptions data:data];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;在这个方法里面首先会创建根视图，当创建完成时WXSDKInstance会收到onCreate的回调&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    //TODO WXRootView
+    WXPerformBlockOnMainThread(^{
+        self.rootView = [[WXView alloc] initWithFrame:self.frame];
+        if(self.onCreate) {
+            self.onCreate(self.rootView);
+        }
+    });
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;之后再通过bridge调用JS方法来开始创建实例&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self callJSMethod:@&quot;createInstance&quot; args:args];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后这里会判断JSFramework也就是js有没有加载完成，然后再通过WXJSBridge的JSContext来执行js方法，这里调用的就是js的createInstance方法，args里面主要就是instanceID，we文件转化的js文件，和options。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)callJSMethod:(NSString *)method args:(NSArray *)args
+{
+    [[_jsContext globalObject] invokeMethod:method withArguments:args];
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;最后js会调用JSContext的callCreateFinish回调，最后调用WXSDKInstance的createFinish方法来结束页面的渲染&lt;/p&gt;
+
+&lt;h3 id=&quot;js调用ios方法&quot;&gt;JS调用iOS方法&lt;/h3&gt;
+
+&lt;p&gt;首先要注册一个组件&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self registerModule:@&quot;dom&quot; withClass:NSClassFromString(@&quot;WXDomModule&quot;)];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;注册module的时候 会通过下面方法&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-objective-c&quot;&gt;+ (void)registerModule:(NSString *)name withClass:(Class)clazz
+{
+    WXAssert(name &amp;amp;&amp;amp; clazz, @&quot;Fail to register the module, please check if the parameters are correct ！&quot;);
+    
+    NSString *moduleName = [WXModuleFactory registerModule:name withClass:clazz];
+    NSDictionary *dict = [WXModuleFactory moduleMethodMapsWithName:moduleName];
+    
+    [[WXSDKManager bridgeMgr] registerModules:dict];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;把所有通过宏注册的方法发送给js端&lt;/p&gt;
+
+&lt;pre&gt;
+WX_EXPORT_METHOD(@selector(createBody:))
+
+&lt;/pre&gt;
+
+&lt;p&gt;这会把方法暴露出来，并且方法名字是”wx_export_method_“加代码所在行号，wx_export_method_25&lt;/p&gt;
+
+&lt;p&gt;组件、模块 是给js端用的，而handler则是给objc自己用的，所以不用发送消息给js端&lt;/p&gt;
+
+&lt;p&gt;然后通过methodForSelector拿到WX_EXPORT_METHOD方法的返回值，并且保存到methods中&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerModuleMethods {
+
+            if ([currentClass respondsToSelector:selector]) {
+                method = ((NSString* (*)(id, SEL))[currentClass methodForSelector:selector])(currentClass, selector);
+            }
+            [_methods setObject:method forKey:name];
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后拿到WXModuleConfig组成的_moduleMap之后再发送给JS端&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [[WXSDKManager bridgeMgr] registerModules:dict];
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这里就是前面提到的调用JSContext的invokeMethod把内容发送到JS端&lt;/p&gt;
+
+&lt;p&gt;最后需要自己callNative的回调，当JS调用时就会传值到这里&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerCallNative:(WXJSCallNative)callNative
+{
+    NSInteger (^callNativeBlock)(JSValue *, JSValue *, JSValue *) = ^(JSValue *instance, JSValue *tasks, JSValue *callback){
+        NSString *instanceId = [instance toString];
+        NSArray *tasksArray = [tasks toArray];
+        NSString *callbackId = [callback toString];
+        
+        return callNative(instanceId, tasksArray, callbackId);
+    };
+    
+    _jsContext[@&quot;callNative&quot;] = callNativeBlock;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;tasks里面包括方法的一些相关信息,包括module（比如dom），method（比如updateFinish），args&lt;/p&gt;
+
+&lt;h1 id=&quot;weex-devtool-ios&quot;&gt;&lt;a href=&quot;https://github.com/weexteam/weex-devtool-iOS&quot;&gt;weex-devtool-iOS&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;weex-devtool-iOS	其实是 &lt;a href=&quot;https://github.com/square/PonyDebugger&quot;&gt;PonyDebugger&lt;/a&gt;的衍生品。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.iliunian.com/2875.html&quot;&gt;使用PonyDebugger调试iOS应用&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/Flipboard/FLEX/blob/000e061d009bb7c64c8338f1715431ad9b5f1558/Classes/Network/PonyDebugger/FLEXNetworkObserver.m&quot;&gt;FLEXNetworkObserver&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 17 Oct 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/weex3/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/weex3/</guid>
+        
+        <category>Weex</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>Weex学习与实践(二):iOS集成的tips</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex1/&quot;&gt;Weex学习与实践(一):Weex,你需要知道的事&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex2/&quot;&gt;Weex学习与实践(二):iOS集成的tips&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex3/&quot;&gt;Weex学习与实践(三):iOS原理篇&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;本文主要介绍包括iOS上集成Weex、iOS上扩展组件、iOS上扩展module&lt;/p&gt;
+
+&lt;h3 id=&quot;ios上集成weex&quot;&gt;iOS上集成Weex&lt;/h3&gt;
+
+&lt;p&gt;集成weex，需要WeexSDK、WXDevtool两个库以及阿里未开源的ATSDK-Weex。&lt;/p&gt;
+
+&lt;p&gt;目前官方的alibaba/Weex仓库里面&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    pod 'WeexSDK', :path=&amp;gt;'../sdk/'
+    pod 'WXDevtool', :path=&amp;gt;'../WXDevtool/'
+    pod 'ATSDK-Weex', '0.0.1'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;它们直接使用的weex仓库的sdk,但是weex主仓库的WXDevtool已经不维护了，需要替换成，&lt;a href=&quot;https://github.com/weexteam/weex-devtool-iOS&quot;&gt;weexteam/weex-devtool-iOS&lt;/a&gt;的代码。&lt;/p&gt;
+
+&lt;p&gt;另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framwork,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。&lt;/p&gt;
+
+&lt;p&gt;当然你也可以不用通过cocoapods集成，直接把代码拉进工程就可以，如果发生&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Unknown type name 'NSString'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;你可能需要把layout.c文件右侧的type改为Objective-C Source，或者直接修改为layout.m。&lt;/p&gt;
+
+&lt;p&gt;基本上JS页面是在WXDemoViewController工作的，你可能需要接收页面刷新的通知，以支持实时刷新&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@&quot;RefreshInstance&quot; object:nil];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;页面会维护一个WXSDKInstance实例，WXSDKInstance就是weex渲染的实例对象，提供了很多页面渲染相关的接口，比如renderWithURL、refreshInstance、destroyInstance等&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/weexteam/article/issues/18&quot;&gt;weex SDK 集成到工程 (integrate to ios) &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://open.taobao.com/doc2/detail?spm=a219a.7629140.0.0.tFddsV&amp;amp;&amp;amp;docType=1&amp;amp;articleId=104829&quot;&gt;Weex iOS SDK 集成指南&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;ios上扩展组件&quot;&gt;iOS上扩展组件&lt;/h3&gt;
+
+&lt;p&gt;目前官方iOS这一块组件的代码在WeexSDK的component里面，组件有限，只有image，list，scroller等，如果想要实现自己的组件，首先需要继承WXComponent类。&lt;/p&gt;
+
+&lt;p&gt;然后实现方法&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
+{}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;注意这个方法不在主线程，这里面接收一些js传过来的参数，以在js端写的image标记为例子&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;image style=&quot;width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220&quot; src=&amp;gt;&amp;lt;/image&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;到objc端就是&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ref:701
+type:image
+styles:
+{
+    height = 100;
+    marginLeft = 220;
+    marginRight = 20;
+    marginTop = 20;
+    width = 100;
+}
+attributes:
+{
+    src = &quot;https://avatars.githubusercontent.com/u/9892522?v=3&quot;;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;ref（结点的唯一标识符）&lt;/p&gt;
+
+&lt;p&gt;然后在loadView的时候可能需要返回自己的objc组件&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (UIView *)loadView
+{
+    return [[WXImageView alloc] init];
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然后你可以通过复写addEvent方法来增加一个change（UIControlEventValueChanged）、click（UIControlEventTouchUpInside）等事件&lt;/p&gt;
+
+&lt;p&gt;如果是image组件的话，你可能需要接收图片地址，这个时候需要通过实现了WXImgLoaderProtocol的WXImgLoaderDefaultImpl来处理，WXImgLoaderDefaultImpl实现了downloadImageWithURL方法，这里面通过SDWebImage来下载一张图片。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/weexteam/article/issues/17&quot;&gt;iOS 扩展 (extend to ios)&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;ios上扩展module&quot;&gt;iOS上扩展module&lt;/h3&gt;
+
+&lt;p&gt;这一块的代码在module分组里面，包括网络库stream，持久化storage等，你可以扩展自己module。&lt;/p&gt;
+
+&lt;p&gt;需要做的是实现WXModuleProtocol协议，并且写自己的方法就可以了，这里需要通过weex的宏把需要public的方法导出&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;在module中目前是没有view的，但是你可以通过由js传过来的ref值拿到&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
+    CALayer *layer = targetComponent.layer;
+    UIView *view = targetComponent.view;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;注意点&quot;&gt;注意点&lt;/h3&gt;
+
+&lt;p&gt;1.如果设置js文件在bundle中载入的话，需要把build的js文件拖入工程，如果的你的we里面一开始就调用了js文件，由于只会buildwe文件，所以还需要把之前的js文件拖入工程，另外examples里面判断iOSAssets是这样的&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;      var isiOSAssets = bundleUrl.indexOf('file:///') &amp;gt;= 0 &amp;amp;&amp;amp; bundleUrl.indexOf('WeexDemo.app') &amp;gt; 0;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;你如果拖入自己的工程需要把WeexDemo.app的判断去掉&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 17 Oct 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/weex2/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/weex2/</guid>
+        
+        <category>Weex</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>Weex学习与实践(一):Weex,你需要知道的事</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex1/&quot;&gt;Weex学习与实践(一):Weex,你需要知道的事&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex2/&quot;&gt;Weex学习与实践(二):iOS集成的tips&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://coderyi.com/posts/weex3/&quot;&gt;Weex学习与实践(三):iOS原理篇&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;本文主要介绍包括Weex基本介绍、Weex源码结构、初始化工程、we代码结构、Weex的生命周期、Weex的工作原理、页面间通信、boxmodel &amp;amp; flexbox、weex的缺点&lt;/p&gt;
+
+&lt;h3 id=&quot;基本介绍&quot;&gt;基本介绍&lt;/h3&gt;
+
+&lt;p&gt;A framework for building Mobile cross-platform UI&lt;/p&gt;
+
+&lt;p&gt;怎么解释它呢？我的理解就是weex = react-native +vue ，使用vue的API风格，两端的实现方式则和react-native，weex 比rn的优点就是一次编写三端运行。&lt;/p&gt;
+
+&lt;p&gt;IDE: Sublime Text + &lt;a href=&quot;https://github.com/vuejs/vue-syntax-highlight&quot;&gt;vue-syntax-highlight&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;命令行工具：&lt;a href=&quot;https://github.com/weexteam/weex-toolkit&quot;&gt;weex-toolkit&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;调试工具: &lt;a href=&quot;https://github.com/weexteam/weex-devtool&quot;&gt;weex-devtool&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;weex分为组件component和模块（module）以及事件&lt;/p&gt;
+
+&lt;p&gt;weex-components : &lt;a href=&quot;https://github.com/weexteam/weex-components&quot;&gt;weex-components&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;组件 就是各种标记组件，比如div 、slider、indicator等
+通过下面这种方式使用&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;div&amp;gt;
+  &amp;lt;image src=&quot;...&quot;&amp;gt;&amp;lt;/image&amp;gt;
+  &amp;lt;text&amp;gt;...&amp;lt;/text&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;js模块&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;modal&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;@weex-module/modal&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;modal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toast&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+  &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;我是提示框&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;  
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;其他的还有stream,dom，animation之类的&lt;/p&gt;
+
+&lt;p&gt;事件&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &amp;lt;div onviewappear=&quot;viewappear&quot; onviewdisappear=&quot;viewdisappear&quot;&amp;gt;
+          ......
+  &amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;weex源码结构&quot;&gt;Weex源码结构&lt;/h3&gt;
+
+&lt;p&gt;package.json&lt;/p&gt;
+
+&lt;p&gt;node_modules依赖，更重要的是里面包含了npm run xxx 等快捷命令。比如之前我们运行node.js程序是这样的：$ node xx.js。这里我们可以把它配置化，例如package.json文件中scripts的 “build:config”: “node build/config.frameworks.js”，其实就是npm run build:config 相当于执行了node build/config.frameworks.js&lt;/p&gt;
+
+&lt;p&gt;start文件: 启动程序文件，里面包换编译和启动脚本：&lt;/p&gt;
+
+&lt;p&gt;examples: 示例Demo&lt;/p&gt;
+
+&lt;p&gt;android/ios/html： 各平台代码&lt;/p&gt;
+
+&lt;p&gt;build：打包各平台的脚本，配置在package.json中。&lt;/p&gt;
+
+&lt;p&gt;参考链接:&lt;a href=&quot;https://vczero.github.io/weex-learning/002_modify_example.html&quot;&gt;第2篇 了解Weex源码结构，修改example&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;初始化工程&quot;&gt;初始化工程&lt;/h3&gt;
+
+&lt;p&gt;初始化工程前需要先安装 &lt;a href=&quot;http://brew.sh/index_zh-cn.html&quot;&gt;homebrew&lt;/a&gt;，然后按照下面步骤创建一个工程。&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;brew&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;node&lt;/span&gt;             &lt;span class=&quot;c1&quot;&gt;//通过brew安装node&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;npm&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;g&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weex&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toolkit&lt;/span&gt;   &lt;span class=&quot;c1&quot;&gt;//通过node安装 weex-toolkit  &lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sudo&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;gem&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cocoapods&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;//安装iOS包管理工具 cocoapods&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weex&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;init&lt;/span&gt;                     &lt;span class=&quot;c1&quot;&gt;//创建项目的文件&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;npm&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;install&lt;/span&gt;                   &lt;span class=&quot;c1&quot;&gt;//依赖安装 package.json文件&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;npm&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dev&lt;/span&gt;                   &lt;span class=&quot;c1&quot;&gt;//项目编译&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;npm&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;serve&lt;/span&gt;                 &lt;span class=&quot;c1&quot;&gt;//启动轻量服务器  &lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;这时有可能提示&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm WARN babel-loader@6.2.5 requires a peer of babel-core@^6.0.0 but none was installed.
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;你需要再&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm install babel-core
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这时，打开浏览器，输入http://127.0.0.1:8080, 就会看到这个项目的效果:&lt;/p&gt;
+
+&lt;p&gt;参考链接:&lt;a href=&quot;https://vczero.github.io/weex-learning/003_init_project.html&quot;&gt;第3篇 初始化工程&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;npm run dev 干了什么呢？&lt;/p&gt;
+
+&lt;p&gt;先看 package.json 文件&lt;/p&gt;
+
+&lt;pre&gt;
+{
+  &quot;name&quot;: &quot;demo1&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;description&quot;: &quot;&quot;,
+  &quot;main&quot;: &quot;index.js&quot;,
+  &quot;scripts&quot;: {
+    &quot;build&quot;: &quot;webpack&quot;,
+    &quot;dev&quot;: &quot;webpack --watch&quot;,
+    &quot;serve&quot;: &quot;serve -p 8080&quot;,
+    &quot;test&quot;: &quot;echo \&quot;Error: no test specified\&quot; &amp;amp;&amp;amp; exit 1&quot;
+  },
+  &quot;keywords&quot;: [],
+  &quot;author&quot;: &quot;&quot;,
+  &quot;license&quot;: &quot;ISC&quot;,
+  &quot;devDependencies&quot;: {
+    &quot;serve&quot;: &quot;^1.4.0&quot;,
+    &quot;webpack&quot;: &quot;^1.13.1&quot;,
+    &quot;weex-html5&quot;: &quot;0.2.18&quot;,
+    &quot;weex-loader&quot;: &quot;^0.1.5&quot;
+  }
+}
+
+&lt;/pre&gt;
+
+&lt;p&gt;npm run dev实际上相当于 webpack –watch&lt;/p&gt;
+
+&lt;p&gt;webpack实际上是执行了默认的webpack.config.js配置文件&lt;/p&gt;
+
+&lt;p&gt;webpack.config.js 引入webpack和weex-loader，entry属性是表示入口文件，output表示输出文件，默认输出到dist文件夹。&lt;/p&gt;
+
+&lt;pre&gt;
+require('webpack')
+require('weex-loader')
+
+var path = require('path')
+
+module.exports = {
+  entry: {
+    main: path.join(__dirname, 'src', 'main.we?entry=true')
+  },
+  output: {
+    path: 'dist',
+    filename: '[name].js'
+  },
+  module: {
+    loaders: [
+      {
+        test: /\.we(\?[^?]+)?$/,
+        loaders: ['weex-loader']
+      }
+    ]
+  }
+}
+
+&lt;/pre&gt;
+
+&lt;p&gt;不过这个自动产生的webpack.config.js的文件有个坑就是，你添加一个新的we文件，他不会自动build为js文件
+可以手动添加&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  entry: {
+    main: path.join(__dirname, 'src', 'main.we?entry=true'),
+    translate: path.join(__dirname, 'src', 'translate.we?entry=true')
+  }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;不过推荐的是自己遍历所有的we文件&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;require('webpack')
+require('weex-loader')
+
+var path = require('path')
+var fs = require('fs');
+
+var entry = {};
+
+function walk(dir, root) {
+  var directory = path.join(__dirname, root, dir);
+  fs.readdirSync(directory)
+    .forEach(function(file) {
+      var fullpath = path.join(directory, file);
+      var stat = fs.statSync(fullpath);
+      var extname = path.extname(fullpath);
+      if (stat.isFile() &amp;amp;&amp;amp;
+             (extname === '.we')) {
+        var name = path.join(root, 'build', dir, path.basename(file, extname));
+        entry[name] = fullpath + '?entry=true';
+      } else if (stat.isDirectory() &amp;amp;&amp;amp;
+                  file !== 'build') {
+        var subdir = path.join(dir, file);
+        walk(subdir, root);
+      }
+    });
+}
+walk('./', 'src');
+module.exports = {
+  entry: entry,
+  output: {
+    path: '.',
+    filename: '[name].js'
+  },
+  module: {
+    loaders: [
+      {
+        test: /\.we(\?[^?]+)?$/,
+        loaders: ['weex-loader']
+      }
+    ]
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/hugojing/toolbox-weex/blob/master/webpack.config.js&quot;&gt;hugojing  - webpack.config.js&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/duqian291902259/weex-demo-dusan/blob/master/webpack.config.js&quot;&gt;duqian291902259 - webpack.config.js&lt;/a&gt;
+&lt;a href=&quot;https://vczero.github.io/weex-learning/003_init_project.html&quot;&gt;第3篇 初始化工程&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;入口文件index.html&lt;/p&gt;
+
+&lt;p&gt;这里可以参考 &lt;a href=&quot;https://github.com/weexteam/article/issues/10&quot;&gt;Integrate Weex HTML5 to your project&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/MrRaindrop/weex_extend_demo&quot;&gt;weex_extend_demo&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;weex代码结构&quot;&gt;weex代码结构&lt;/h3&gt;
+
+&lt;p&gt;template内必须包含唯一的根节点作为父容器, div就是一个很好的选择，里面则是一些Native Components&lt;/p&gt;
+
+&lt;p&gt;style 支持盒子模型和Flexbox&lt;/p&gt;
+
+&lt;p&gt;weex内置了响应式的支持，页面的宽度是以750来做为标准，自动适配所有手机；&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;template&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/template&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;style&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/style&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;script&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exports&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;nl&quot;&gt;methods&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nl&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;computed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;y&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;events&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;custom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{},&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;created&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{},&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/script&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;script里面包含很多ViewModel Options，&lt;/p&gt;
+
+&lt;p&gt;data
+methods
+computed
+init, created, ready
+events&lt;/p&gt;
+
+&lt;p&gt;如果需要在模板里实现更多的逻辑判断,你可以使用’computed property’.&lt;/p&gt;
+
+&lt;p&gt;created是生命周期函数，这个时候模板还没有被渲染，常用来在这里定义数据的更新和获取；&lt;/p&gt;
+
+&lt;p&gt;ready是生命周期函数，这个时候模板被渲染，常用来做一些自己上报等；&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/alibaba/weex/blob/dev/doc/references/cheatsheet.md&quot;&gt;weex- references - Weex Cheat Sheet&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;显然we文件的这些代码是不会被 native app 识别的，我们要想办法让这些代码可运行。所以我们同时做了三件事：&lt;/p&gt;
+
+&lt;p&gt;1.在本地用一个叫做 transformer 的工具把这套代码转成纯 JavaScript 代码&lt;/p&gt;
+
+&lt;p&gt;2.在客户端运行一个 JavaScript 引擎，随时接收 JavaScript 代码&lt;/p&gt;
+
+&lt;p&gt;3.在客户端设计一套 JS Bridge，让 native 代码可以和 JavaScript 引擎相互通信&lt;/p&gt;
+
+&lt;p&gt;所以紧接着第二步，就是用 transformer 对代码进行转换，变成客户端可运行的 JavaScript 代码&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://cloud.githubusercontent.com/assets/206848/11239127/f7854634-8e24-11e5-8173-3417c63043a4.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/amfe/article/issues/14&quot;&gt;原图&lt;/a&gt;：本地开发时的 Weex Transformer 工作原理&lt;/p&gt;
+
+&lt;p&gt;在 transformer 中，我们主要的工作就是对 HTML、CSS、JavaScript 代码进行解析和重组。这里我们用到了三个非常重要的库：&lt;/p&gt;
+
+&lt;p&gt;HTML 解析工具：&lt;a href=&quot;https://www.npmjs.com/package/htmlparser&quot;&gt;htmlparser&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;CSS 解析工具：&lt;a href=&quot;https://www.npmjs.com/package/cssom&quot;&gt;cssom&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;JavaScript 解析工具：&lt;a href=&quot;https://www.npmjs.com/package/uglify-js&quot;&gt;uglify-js&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/amfe/article/issues/15&quot;&gt;对无线电商动态化方案的思考（三） &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/amfe/article/issues/14&quot;&gt;对无线电商动态化方案的思考（二） &lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;weex-的生命周期&quot;&gt;Weex 的生命周期&lt;/h3&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;script&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exports&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{},&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;methods&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{},&lt;/span&gt;
+
+    &lt;span class=&quot;na&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;在初始化内部变量，并且添加了事件功能后被触发&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;created&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;完成数据绑定之后，模板编译之前被触发&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;模板已经编译并且生成了 Virtual DOM 之后被触发&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;destroyed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;在页面被销毁时调用&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/script&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;init内一般用于初始化一些内部变量，绑定一些自定义事件，这时还没有数据绑定，没有创建vdom，所以不能通过this获取到data和methods，也不能获取vdom的节点&lt;/p&gt;
+
+&lt;p&gt;created 完成了数据绑定 ，但还未开始编译模板，可以通过this获取data和methods，但不能获取vdom的节点&lt;/p&gt;
+
+&lt;p&gt;ready表示渲染完成 ，从子组件往上触发&lt;/p&gt;
+
+&lt;p&gt;destroyed 组件销毁，比如页面跳转，从子组件开始往上触发&lt;/p&gt;
+
+&lt;h3 id=&quot;weex的工作原理&quot;&gt;Weex的工作原理&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://res.infoq.com/articles/introducing-weex/zh/resources/QQ20160428162545.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://res.infoq.com/articles/introducing-weex/zh/resources/QQ20160428162748.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://cloud.githubusercontent.com/assets/206848/11239145/0b0bd8e4-8e25-11e5-86e1-704adcfc6141.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.infoq.com/cn/articles/introducing-weex&quot;&gt;Weex详解：灵活的移动端高性能动态化方案 - 勾股&amp;amp;鬼道&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/amfe/article/issues/14&quot;&gt;对无线电商动态化方案的思考（二）&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;页面间通信&quot;&gt;页面间通信&lt;/h3&gt;
+
+&lt;p&gt;页面跳转是通过指定下一个页面的url，然后通过openurl或者push的方式来跳转&lt;/p&gt;
+
+&lt;p&gt;获取url的方式可以通过下面这段JS代码&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function getAppBaseUrl(self) {
+    var dir ='examples'
+    var url = self.$getConfig().bundleUrl;
+    var bundleUrl = url;
+    bundleUrl = new String(bundleUrl);
+
+    var nativeBase;
+    var isAndroidAssets = bundleUrl.indexOf('file://assets/') &amp;gt;= 0;
+
+    var isiOSAssets = bundleUrl.indexOf('file:///') &amp;gt;= 0;
+    if (isAndroidAssets) {
+      nativeBase = 'file://assets/';
+    }
+    else if (isiOSAssets) {
+      nativeBase = bundleUrl.substring(0, bundleUrl.lastIndexOf('/') + 1);
+    }
+    else {
+      var host = 'localhost:12580';
+      var matches = /\/\/([^\/]+?)\//.exec(self.$getConfig().bundleUrl);
+      if (matches &amp;amp;&amp;amp; matches.length &amp;gt;= 2) {
+        host = matches[1];
+      }
+      nativeBase = 'http://' + host + '/' + dir + '/build/';
+    }
+    var h5Base = './index.html?page=./' + dir + '/build/';
+    //Native端
+    var base = nativeBase;
+    //H5端
+    if (typeof window === 'object') {
+      base = h5Base;
+    }
+    return base
+}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://vczero.github.io/weex-learning/006_navigation.html&quot;&gt;第六篇 导航、页面跳转、stream、webview&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;页面通信有两种方式&lt;/p&gt;
+
+&lt;p&gt;1.通过 url 参数传递。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/**
+ * 获取URL参数
+ */
+getUrlParam: function (key) {
+    var t = this.$getConfig().bundleUrl;
+    var reg = new RegExp('[?|&amp;amp;]' + key + '=([^&amp;amp;]+)');
+    var match = t.match(reg);
+    return match &amp;amp;&amp;amp; match[1];
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;2.通过 localStorage 数据存储。&lt;/p&gt;
+
+&lt;p&gt;如果是组件间通信不是页面通信，则参考：&lt;a href=&quot;https://github.com/weexteam/article/issues/16&quot;&gt;组件之间通信 - (Communicate Between Components)&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;boxmodel--flexbox&quot;&gt;boxmodel &amp;amp; flexbox&lt;/h3&gt;
+
+&lt;p&gt;weex支持boxmodel 和flexbox&lt;/p&gt;
+
+&lt;p&gt;下面这个是boxmodel&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://www.w3school.com.cn/i/ct_boxmodel.gif&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;关于flexbox，可以看我的这篇文章[react-native的第一课&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;flexbox布局](http://coderyi.com/posts/react-native_first_lesson/#flexbox布局)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;weex的缺点&quot;&gt;weex的缺点&lt;/h3&gt;
+
+&lt;p&gt;1.Weex将整个app的宽度定死在750px，然后其他都是根据scale进行计算的，会导致适配不方便。&lt;/p&gt;
+
+&lt;p&gt;2.目前不支持iOS的presentViewController方法&lt;/p&gt;
+
+&lt;p&gt;3.很多组件和模块需要自己扩展（比如datepicker，iconfont，摄像头，二维码等）&lt;/p&gt;
+
+&lt;h3 id=&quot;几个小问题&quot;&gt;几个小问题&lt;/h3&gt;
+
+&lt;p&gt;1.之前weex是只支持es5，现在可以支持es6了。&lt;a href=&quot;http://weex.help/topic/578c9649ac4eeead13b2a8f1&quot;&gt;精华 新版weex-loader@0.3.0-alpha，欢迎试用&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;2.怎么断点调试？&lt;/p&gt;
+
+&lt;p&gt;目前是可以断点调试的，可以参考下面文章&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/weexteam/article/issues/50&quot;&gt;Weex调试神器——Weex Devtools使用手册 &lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/h5weex/h5weex-books/blob/master/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/%E7%BA%BF%E4%B8%8A%E8%B0%83%E8%AF%95.md&quot;&gt;线上调试&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;3.weex支持本地图片吗？&lt;/p&gt;
+
+&lt;p&gt;根据官方答疑是可以的，但是我目前还没有尝试成功。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/alibaba/weex/blob/doc/doc/faq.md#use-local-image&quot;&gt;faq:use-local-image&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;4.&lt;a href=&quot;https://github.com/Jinjiang/weex-x&quot;&gt;weex-x&lt;/a&gt;的使用？&lt;/p&gt;
+
+&lt;p&gt;5.promise怎么使用？&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/alibaba/weex/issues/1269&quot;&gt;issues - 1269&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;6.热更新方案是什么？&lt;/p&gt;
+
+&lt;p&gt;最后，希望有越来越多的人把weex用起来。&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 17 Oct 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/weex1/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/weex1/</guid>
+        
+        <category>Weex</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>iOS 10 Today 的适配</title>
+        <description>&lt;h3 id=&quot;ncwidgetproviding&quot;&gt;NCWidgetProviding&lt;/h3&gt;
+
+&lt;pre&gt;
+- (void)widgetActiveDisplayModeDidChange:(NCWidgetDisplayMode)activeDisplayMode withMaximumSize:(CGSize)maxSize NS_AVAILABLE_IOS(10_0);
+&lt;/pre&gt;
+
+&lt;p&gt;这是iOS10新出的API，today多了展开和折叠两种模式，当模块发生改变之后就会调用这个方法。&lt;/p&gt;
+
+&lt;p&gt;activeDisplayMode 为NCWidgetDisplayModeCompact 、NCWidgetDisplayModeExpanded， maxSize为today的最大支持的size。&lt;/p&gt;
+
+&lt;p&gt;activeDisplayMode还可以通过self.extensionContext.widgetActiveDisplayMode获得&lt;/p&gt;
+
+&lt;p&gt;maxSize可以通过[self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeExpanded]获得。&lt;/p&gt;
+
+&lt;p&gt;当然 [self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeCompact]获得折叠下的最小支持size。&lt;/p&gt;
+
+&lt;p&gt;widgetActiveDisplayMode是一个只读变量，与此还有一个widgetLargestAvailableDisplayMode属性，NCWidgetDisplayModeCompact 表示不支持折叠和展开，只能是折叠模式了，需要设置为&lt;/p&gt;
+
+&lt;pre&gt;
+self.extensionContext.widgetLargestAvailableDisplayMode = NCWidgetDisplayModeExpanded;
+&lt;/pre&gt;
+
+&lt;p&gt;才支持折叠和展开&lt;/p&gt;
+
+&lt;p&gt;最小支持&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; &lt;/th&gt;
+      &lt;th&gt;iPhone5&lt;/th&gt;
+      &lt;th&gt;iPhone6&lt;/th&gt;
+      &lt;th&gt;iPhone6 P&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;竖屏&lt;/td&gt;
+      &lt;td&gt;304(width,就是两边为8),110(height)&lt;/td&gt;
+      &lt;td&gt;359,110&lt;/td&gt;
+      &lt;td&gt;398,110&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;横屏&lt;/td&gt;
+      &lt;td&gt;420,110&lt;/td&gt;
+      &lt;td&gt;420,110&lt;/td&gt;
+      &lt;td&gt;420,110&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;最大支持&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; &lt;/th&gt;
+      &lt;th&gt;iPhone5&lt;/th&gt;
+      &lt;th&gt;iPhone6&lt;/th&gt;
+      &lt;th&gt;iPhone6 P&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;竖屏&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]，(width)304,(height)528;[通知栏下拉]304,396&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]359,616;[通知栏下拉]359,528&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]398,660;[通知栏下拉]398,572&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;横屏&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]420,高度待测试;[通知栏下拉]420,176&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]420,高度待测试;[通知栏下拉]420,220&lt;/td&gt;
+      &lt;td&gt;[锁屏进入]420,352;[通知栏下拉]420,264&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;注意的是iOS10 today有三个入口就是，锁屏，iPhone home的第一个tab页面，通知栏下拉，前两个对高度的限制是一样的且会宽松一些，通知栏下拉则对高度限制严格些，一般来说不能超出当前屏幕显示范围。&lt;/p&gt;
+
+&lt;h3 id=&quot;today布局&quot;&gt;today布局&lt;/h3&gt;
+
+&lt;p&gt;today 默认是 storyboard布局的，如果想要使用代码布局。需要把today中Info.plist的&lt;/p&gt;
+
+&lt;pre&gt;
+&amp;lt;key&amp;gt;NSExtension&amp;lt;/key&amp;gt;
+&amp;lt;dict&amp;gt;
+&amp;lt;key&amp;gt;NSExtensionMainStoryboard&amp;lt;/key&amp;gt;
+&amp;lt;string&amp;gt;MainInterface&amp;lt;/string&amp;gt;
+&amp;lt;key&amp;gt;NSExtensionPointIdentifier&amp;lt;/key&amp;gt;
+&amp;lt;string&amp;gt;com.apple.widget-extension&amp;lt;/string&amp;gt;
+&amp;lt;/dict&amp;gt;
+&lt;/pre&gt;
+&lt;p&gt;修改为&lt;/p&gt;
+&lt;pre&gt;
+&amp;lt;key&amp;gt;NSExtension&amp;lt;/key&amp;gt;
+&amp;lt;dict&amp;gt;
+&amp;lt;key&amp;gt;NSExtensionMainStoryboard&amp;lt;/key&amp;gt;
+&amp;lt;string&amp;gt; NSExtensionPointIdentifier&amp;lt;/string&amp;gt;
+&amp;lt;key&amp;gt;NSExtensionPointIdentifier&amp;lt;/key&amp;gt;
+&amp;lt;string&amp;gt;com.apple.widget-extension&amp;lt;/string&amp;gt;
+&amp;lt;/dict&amp;gt;
+&lt;/pre&gt;
+
+&lt;h3 id=&quot;调起app&quot;&gt;调起app&lt;/h3&gt;
+
+&lt;p&gt;通过&lt;/p&gt;
+
+&lt;pre&gt;
+[self.extensionContext openURL:[NSURL URLWithString:urlString] completionHandler:^(BOOL success) { 
+NSLog(@&quot;open url result:%d&quot;,success); 
+}];
+&lt;/pre&gt;
+
+&lt;p&gt;就可以调起app了，&lt;/p&gt;
+
+&lt;p&gt;然后在app端的appdelegate里面下面方法接收。&lt;/p&gt;
+&lt;pre&gt;
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(nullable NSString *)sourceApplication annotation:(id)annotation
+
+&lt;/pre&gt;
+&lt;h3 id=&quot;数据共享&quot;&gt;数据共享&lt;/h3&gt;
+
+&lt;p&gt;app 和 today都有各自的空间，但也有共享的空间group。&lt;/p&gt;
+
+&lt;p&gt;通过NSUserDefaults共享数据&lt;/p&gt;
+
+&lt;pre&gt;
+NSUserDefaults *shared = [[NSUserDefaults alloc] initWithSuiteName:@&quot;group.c
+om.xxx&quot;];
+&lt;/pre&gt;
+
+&lt;p&gt;可以通过这个userdefaults读写group的数据，suiteName是需要在capabilities里面配置的，userdefaults和filemanager是共用的。&lt;/p&gt;
+
+&lt;pre&gt;
+NSURL *containerURL = [[NSFileManager defaultManager] containerURLForSecuri
+tyApplicationGroupIdentifier:@&quot;group.com.xxx&quot;]; 
+&lt;/pre&gt;
+
+&lt;p&gt;而NSFileManager则可以通过上面的url进行读写。&lt;/p&gt;
+
+&lt;h3 id=&quot;代码共享&quot;&gt;代码共享&lt;/h3&gt;
+
+&lt;p&gt;如果一个文件需要在today和app内都用的话，则只要.m文件的targetmembership勾选两个就可以了。&lt;/p&gt;
+
+&lt;p&gt;如果 在你的工程里面有自己的其他 framework target。 如果你想用这个target里面文件，则可以在这个target的general里面勾选allow app extension API only。&lt;/p&gt;
+
+&lt;p&gt;如果对于一个类app和extension都可以调用，但是你其中的某些代码块想区分。&lt;/p&gt;
+
+&lt;p&gt;你可以在today target里面添加宏定义 ，Build Settings - Preprocessor Macros下面添加&lt;/p&gt;
+
+&lt;pre&gt;
+TARGET_IS_EXTENSION=1
+&lt;/pre&gt;
+
+&lt;p&gt;使用的话就是&lt;/p&gt;
+
+&lt;pre&gt;
+#ifndef TARGET_IS_EXTENSION
+
+#endif
+&lt;/pre&gt;
+
+&lt;h3 id=&quot;ios-10-支持的设备&quot;&gt;iOS 10 支持的设备&lt;/h3&gt;
+
+&lt;pre&gt;
+iPhone 7
+iPhone 7 Plus
+iPhone 6s
+iPhone 6s Plus
+iPhone 6
+iPhone 6 Plus
+iPhone SE
+iPhone 5s
+iPhone 5c
+iPhone 5
+
+iPad Pro 12.9 英寸
+iPad Pro 9.7 英寸
+iPad Air 2
+iPad Air
+iPad 第四代
+iPad mini 4
+iPad mini 3
+iPad mini 2
+
+iPod touch 第六代
+&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/coderyi/blog/master/other/images/ios10_support_device.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+</description>
+        <pubDate>Mon, 10 Oct 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/ios_10_today/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/ios_10_today/</guid>
+        
+        <category>iOS10</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>Apple Watch开发的几个小问题</title>
+        <description>&lt;p&gt;20160522&lt;/p&gt;
+
+&lt;h5 id=&quot;q1-如何在调试applewatch的时候对watch程序打断点&quot;&gt;Q1 如何在调试AppleWatch的时候对watch程序打断点&lt;/h5&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;在Xcode的Target选择AppleWatch程序&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Watch应用启动之后再打开iPhone模拟器中的程序,然后回到Xcode,选择菜单里的Debug-&amp;gt;Attach to Process by PID or name ,填写apple watch extension 的bundle identifier&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;断点就可以生效了&lt;/p&gt;
+
+&lt;h5 id=&quot;q2-watchkit-架构变化&quot;&gt;Q2 WatchKit 架构变化&lt;/h5&gt;
+
+&lt;p&gt;在 watchOS 1 做过开发的人，都应该熟悉如下这张图：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://7u2mu6.com1.z0.glb.clouddn.com/QQ20151017-4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如上图所示，在 watchOS 1 上面做开发，Apple Watch 应用程序由两部分构成：Watch App 和 WatchKit 扩展。&lt;/p&gt;
+
+&lt;p&gt;Watch App 是一个运行在 Apple Watch 中的可执行文件。它包括 storyboard 和渲染屏幕时所需的资源文件。&lt;/p&gt;
+
+&lt;p&gt;WatchKit 扩展则是运行在 iPhone 上的可执行文件。包括管理应用程序界面的逻辑代码，以及处理用户的交互操作。&lt;/p&gt;
+
+&lt;p&gt;那么，在 watchOS 2 中，WatchKit 的架构发生了比较重大的变化，我们先来看看下面这张图：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://7u2mu6.com1.z0.glb.clouddn.com/QQ20151017-5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;从上面的图中，可以很明显地看出，苹果把原来运行在 iPhone 手机上的 WatchKit Extension 移到 Apple Watch 中了。这将直接带来如下改变：原来只存放一些资源和 Storyboard 的 Watch App，现在程序的业务逻辑部分（也就是代码执行部分）也被放到 Watch App 中。这样的话，程序给用户的体验会更好，Watch App 的运行可以完全独立于 iPhone 了。&lt;/p&gt;
+
+&lt;h5 id=&quot;q3-watch-os-1--watch-os-2-获取网络资源的方法&quot;&gt;Q3 watch os 1 &amp;amp; watch os 2 获取网络资源的方法&lt;/h5&gt;
+
+&lt;p&gt;watch os 1主要是通过WKInterfaceController的&lt;/p&gt;
+&lt;pre&gt;
++ (BOOL)openParentApplication:(NSDictionary *)userInfo reply:(nullable void(^)(NSDictionary * replyInfo, NSError * __nullable error)) reply WK_AVAILABLE_IOS_ONLY(8.2);    // launches containing iOS application on the phone. userInfo must be non-nil
+
+&lt;/pre&gt;
+&lt;p&gt;方法交给iPhone去处理，当iPhone收到消息后在AppDelegate中收到回调&lt;/p&gt;
+&lt;pre&gt;
+- (void)application:(UIApplication *)application handleWatchKitExtensionRequest:(NSDictionary *)userInfo reply:(void (^)(NSDictionary *))reply
+{}
+&lt;/pre&gt;
+&lt;p&gt;到这里后交给NSURLSession或者NSURLConnection处理。&lt;/p&gt;
+
+&lt;p&gt;watch os 2基于watch架构变化后，可以直接由watch发起网络请求，值得注意的是，Apple Watch 2 中还支持 WiFi，所以 Apple Watch 可以通过 WiFi，直接获取一些网络数据等。并且 Apple Watch 无法处理的一些业务，可以通过 WatchConnectivity 框架的WCSession，请求 iPhone 进行处理，并将结果返回给 Apple Watch。&lt;/p&gt;
+
+&lt;h5 id=&quot;q4-apple-watch强退app的方法&quot;&gt;Q4 Apple Watch强退App的方法&lt;/h5&gt;
+
+&lt;p&gt;虽然apple watch的应用没有真正意义上的后台，表冠退出应用以后就不在运行（部分自带应用的检测功能不会退出）了，但下一次启动应用会很快。可是作为一名强迫症十分想关闭后台应用，于是发现一种关闭后台应用的方法：如要完全退出健身应用，&lt;/p&gt;
+
+&lt;p&gt;第一步：进入健身应用界面&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://images.weiphone.net/data/attachment/forum/201505/07/112751r24zbqkjyzq13znl.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;第二步：按住（长按）侧边按钮，出现关机/省电模式界面后松开按钮。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://images.weiphone.net/data/attachment/forum/201505/07/112826ivzav878k77x3xyh.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;第三部：不要管界面内容，再次按住（长按）侧边按钮，大约3秒后应用被完全退出。&lt;/p&gt;
+
+&lt;p&gt;如果再一次打开这个应用可能会需要一点加载时间。&lt;/p&gt;
+
+&lt;h5 id=&quot;q5-wkinterfacecontroller的生命周期&quot;&gt;Q5 wkinterfacecontroller的生命周期&lt;/h5&gt;
+
+&lt;p&gt;watch app是Page-Based，可以左右滑动，假设有三个interfacecontroller，刚启动的时候，它们大概是下面这样运行&lt;/p&gt;
+
+&lt;pre&gt;
+2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController init]
+2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController awakeWithContext:]
+2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController init]
+2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController awakeWithContext:]
+2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController init]
+2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController awakeWithContext:]
+2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController willActivate]
+2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController didAppear]
+2016-05-18 18:58:49.297 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController willActivate]
+2016-05-18 18:58:49.298 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController didDeactivate]
+
+&lt;/pre&gt;
+
+&lt;p&gt;由InterfaceController滑动到RepositoryInterfaceController之后&lt;/p&gt;
+
+&lt;pre&gt;
+
+
+2016-05-18 19:01:31.941 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController willDisappear]
+2016-05-18 19:01:31.941 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController willActivate]
+2016-05-18 19:01:31.942 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController didDeactivate]
+2016-05-18 19:01:31.942 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController didAppear]
+2016-05-18 19:01:32.445 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController willActivate]
+2016-05-18 19:01:37.710 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController didDeactivate]
+
+
+&lt;/pre&gt;
+
+&lt;h5 id=&quot;q6-wkinterfacetable如何使用&quot;&gt;Q6 WKInterfaceTable如何使用&lt;/h5&gt;
+
+&lt;p&gt;首先需要storyboard中建立表以及自定义的row，下面是初始化表视图，SettingRow是一个NSObject对象。&lt;/p&gt;
+
+&lt;pre&gt;
+- (void)initTable
+{
+    [self.settingTable setNumberOfRows:2 withRowType:NSStringFromClass([SettingRow class])];
+    
+    for (NSInteger i=0; i&amp;lt;2; i++) {
+        SettingRow *elementRow = (SettingRow *)[self.settingTable rowControllerAtIndex:i];
+        [elementRow.titleLabel setText:[NSString stringWithFormat:@&quot;%@ 设置开发语言&quot;,@(i)]];
+    }
+}
+&lt;/pre&gt;
+
+&lt;p&gt;table的点击事件则需要复写WKInterfaceController的方法&lt;/p&gt;
+&lt;pre&gt;
+- (void)table:(WKInterfaceTable *)table didSelectRowAtIndex:(NSInteger)rowIndex;  // row selection if controller has WKInterfaceTable property
+{
+    if (rowIndex==0) {
+        [self presentControllerWithName:NSStringFromClass([LanguageListInterfaceController class]) context:nil];
+    }
+}
+&lt;/pre&gt;
+
+&lt;h5 id=&quot;q7-三种交互方式&quot;&gt;Q7 三种交互方式&lt;/h5&gt;
+
+&lt;p&gt;Apple Watch将会有三种交互方式：主屏幕下，佩戴者可以看到所有的Watch app，用户点击后就可以直接启动相应app；第二种交互方式被称做“Glance”，该界面下不含按钮，也不可滑动，用户只能够进行快速阅读，内容将只有一屏空间。开发者可以定制该界面，用户点击后即会启动相应app。第三种交互方式是通知提醒的定制操作。当iPhone上的通知推送至Apple Watch上显示后，当用户点击后就可以进入更详细的信息显示页面，开发者可以对该界面进行定制。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://cdn.pingwest.com/wp-content/uploads/2014/11/WatchKit.jpg?imageView2/2/w/750/q/90&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;q8-兼容ios6的问题&quot;&gt;Q8 兼容iOS6的问题&lt;/h5&gt;
+
+&lt;p&gt;在iOS6的机器上运行，我发现了一下问题，&lt;/p&gt;
+
+&lt;pre&gt;
+dyld: Library not loaded: /System/Library/Frameworks/WatchKit.framework/WatchKit
+Referenced from: /var/mobile/Applications/xxxx/xxx.app/xxx
+Reason: image not found
+(lldb) 
+&lt;/pre&gt;
+
+&lt;p&gt;因为watchkit.framework 在iOS 6上是不存在的，所以才会有上面的错误，这时需要在build phases里把watchkit.framework从Required（添加framework默认为此）改为optional。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.cnblogs.com/wanyakun/p/3494323.html&quot;&gt;iOS开发 .framework的Optional(弱引用)和Required(强引用)区别&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://jerryliu.org/ios%20programming/Apple%20Watch-Development-summary/&quot;&gt;Apple Watch三个月开发的一些收获总结&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://beyondvincent.com/2015/10/16/2015-10-16-watchkit-for-watchos-2/&quot;&gt;watchOS 2&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;http://bbs.feng.com/read-htm-tid-9101476.html&lt;/p&gt;
+
+&lt;p&gt;https://developer.apple.com/library/ios/samplecode/Lister/Introduction/Intro.html&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://wiki.jikexueyuan.com/project/apple-watch-programming-guide/&quot;&gt;Apple Watch 编程指南（中文版）－极客学院&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.cocoachina.com/applewatch/&quot;&gt;Apple Watch开发专题&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/ipader/SwiftGuide/tree/master/Apple%20Watch&quot;&gt;Apple Watch 指南-github&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Sun, 22 May 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/AppleWatch/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/AppleWatch/</guid>
+        
+        <category>AppleWatch</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>react-native的第一课</title>
+        <description>&lt;p&gt;2016-01-22&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/coderyi&quot;&gt;coderyi&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;#react-用于构建用户界面的javascript库&quot;&gt;React-用于构建用户界面的JavaScript库&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#flexbox布局&quot;&gt;Flexbox布局&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#组件的生命周期&quot;&gt;组件的生命周期&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#navigator&quot;&gt;Navigator&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#react-native与原生交互&quot;&gt;react-native与原生交互&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#es6与es5&quot;&gt;ES6与ES5&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#promise&quot;&gt;Promise&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#fetch&quot;&gt;fetch&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#npm&quot;&gt;npm&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;react-用于构建用户界面的javascript库&quot;&gt;React-用于构建用户界面的JavaScript库&lt;/h3&gt;
+
+&lt;p&gt;React是作为MVC中V存在的，React有一个JSX的编译器，JSX 让你可以用 HTML 语法去写 JavaScript 函数调用。&lt;/p&gt;
+
+&lt;p&gt;举例JSX是以下写法：&lt;/p&gt;
+
+&lt;pre&gt;
+&amp;lt;div&amp;gt;
+     &amp;lt;MyLabel  text={TextLabel} /&amp;gt;
+     &amp;lt;MyTextfield /&amp;gt;
+     &amp;lt;MyButton textlabel='OK' /&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/pre&gt;
+
+&lt;p&gt;如果不经过JSX转化，你就必须用下面JavaScript的写法：&lt;/p&gt;
+
+&lt;pre&gt;
+React.createElement(&quot;div&quot;, null, 
+     React.createElement(MyLabel, {text: TextLabel}), 
+     React.createElement(MyTextfield, null), 
+     React.createElement(MyButton, {textlabel: &quot;OK&quot;}))
+&lt;/pre&gt;
+
+&lt;p&gt;其实如果是写界面，JSX的XML风格就看起来比JavaScript人性化了。&lt;/p&gt;
+
+&lt;p&gt;React 可以渲染 HTML 标签 (strings) 或 React 组件 (classes)，React 的 JSX 里约定分别使用首字母大、小写来区分本地组件的类和 HTML 标签。&lt;/p&gt;
+
+&lt;p&gt;React 使用 Virtual DOM 来渲染 UI，当组件状态 state 有更改的时候，React 会自动调用组件的 render 方法重新渲染整个组件的 UI。&lt;/p&gt;
+
+&lt;p&gt;React之所以快，就是因为没有直接操作DOM，组件 DOM 结构就是映射到这个虚拟 DOM 上，React 在这个虚拟 DOM 上实现了一个 diff 算法，当要更新组件的时候，会通过 diff 寻找到要变更的 DOM 节点，再把这个修改更新到浏览器实际的 DOM 节点上，所以实际上不是真的渲染整个 DOM 树。这个虚拟 DOM 是一个纯粹的 JS 数据结构，所以性能会比原生 DOM 快很多。&lt;/p&gt;
+
+&lt;p&gt;React 操作具体可以看下图：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://www.ibm.com/developerworks/cn/web/wa-react-intro/figure1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Flux是Facebook用来构建用户端的web应用的应用程序体系架构。它通过利用数据的单向流动为React的可复用的视图组件提供了补充。Flux应用主要包括三部分：dispatcher、store和views（React components）,dispatcher处理动作分发，维护Store之间的依赖关系，store是数据和逻辑部分，views是React组件，这一层可以看作controller-views,作为视图同时响应用户交互，最后其实还有一个action部分，提供dispatcher传递数据给store&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://facebook.github.io/flux/img/flux-simple-f8-diagram-explained-1300w.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://reactjs.cn/react/index.html&quot;&gt;React-中文文档&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.ibm.com/developerworks/cn/web/wa-react-intro/&quot;&gt;React：创建可维护、高性能的 UI 组件&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://wiki.jikexueyuan.com/project/react-tutorial/&quot;&gt;极客学院-React 入门教程&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;flexbox布局&quot;&gt;Flexbox布局&lt;/h3&gt;
+
+&lt;p&gt;Flex布局主要思想是让容器有能力让其子项目能够改变其宽度、高度(甚至顺序)，以最佳方式填充可用空间（主要是为了适应所有类型的显示设备和屏幕大小）。&lt;/p&gt;
+
+&lt;p&gt;基本上，伸缩项目是沿着主轴（main axis），从主轴起点（main-start）到主轴终点（main-end）或者沿着侧轴（cross axis），从侧轴起点（cross-start）到侧轴终点（cross-end）排列。&lt;/p&gt;
+
+&lt;p&gt;这里可以看一下flexbox的几个主要属性&lt;/p&gt;
+
+&lt;p&gt;flex-direction（适用于伸缩容器，也就是伸缩项目的父元素）&lt;/p&gt;
+
+&lt;p&gt;这个主要用来创建主轴，从而定义了伸缩项目放置在伸缩容器的方向。&lt;/p&gt;
+
+&lt;pre&gt;
+flex-direction: row | row-reverse | column | column-reverse	
+
+&lt;/pre&gt;
+
+&lt;p&gt;flex-wrap(适用于伸缩容器)
+这个主要用来定义伸缩容器里是单行还是多行显示，侧轴的方向决定了新行堆放的方向。&lt;/p&gt;
+
+&lt;pre&gt;
+flex-wrap: nowrap | wrap | wrap-reverse	
+
+&lt;/pre&gt;
+
+&lt;p&gt;justify-content（适用于伸缩容器）&lt;/p&gt;
+
+&lt;p&gt;这个是用来定义伸缩项目沿着主轴线的对齐方式。当一行上的所有伸缩项目都不能伸缩或可伸缩但是已经达到其最大长度时，这一属性才会对多余的空间进行分配。&lt;/p&gt;
+
+&lt;pre&gt;
+justify-content: flex-start | flex-end | center | space-between | space-around	
+
+&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;https://cdn.css-tricks.com/wp-content/uploads/2013/04/justify-content.svg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;align-item（适用于伸缩容器）&lt;/p&gt;
+
+&lt;p&gt;这个主要用来定义伸缩项目可以在伸缩容器的当前行的侧轴上对齐方式。可以把他想像成侧轴（垂直于主轴）的“justify-content”。&lt;/p&gt;
+&lt;pre&gt;
+align-items: flex-start | flex-end | center | baseline | stretch	
+
+&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;https://cdn.css-tricks.com/wp-content/uploads/2013/04/align-content.svg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;align-content(适用于伸缩容器)&lt;/p&gt;
+
+&lt;p&gt;这个属性主要是伸缩容器多行是主轴的对齐方式&lt;/p&gt;
+&lt;pre&gt;
+align-content: flex-start | flex-end | center | space-between | space-around | stretch	
+
+&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://cdn.css-tricks.com/wp-content/uploads/2014/05/align-items.svg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.w3cplus.com/css3/a-guide-to-flexbox.html&quot;&gt;一个完整的Flexbox指南&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;组件的生命周期&quot;&gt;组件的生命周期&lt;/h3&gt;
+
+&lt;p&gt;React组件的生命周期如下图：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://7rf9ir.com1.z0.glb.clouddn.com/3-3-component-lifecycle.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;所以组件生命周期就是有三个阶段：&lt;/p&gt;
+
+&lt;p&gt;实例化：当首次使用组件类时&lt;/p&gt;
+
+&lt;p&gt;存在期：当实例已经生成，修改属性时&lt;/p&gt;
+
+&lt;p&gt;销毁期：当组件卸载消亡时&lt;/p&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.race604.com/react-native-component-lifecycle/&quot;&gt;React Native 中组件的生命周期&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;navigator&quot;&gt;Navigator&lt;/h3&gt;
+
+&lt;p&gt;Navigator和NavigatorIOS都可以用来管理应用中“场景”的导航（也可以称作屏幕）。导航器建立了一个路由栈，用来弹出，推入或者替换路由状态。主要的区别在于NavigatorIOS使用了iOS中的UINavigationController类，而Navigator则完全用js重写了一个类似功能的React组件。&lt;/p&gt;
+
+&lt;p&gt;关于Navigator，可以看一下下面的示例：&lt;/p&gt;
+&lt;pre&gt;
+// index.ios.js
+
+var {
+    View,
+    Navigator
+} = React;
+var FirstPageComponent = require('./FirstPageComponent');
+
+var SampleComponent = React.createClass({
+    render: function() {
+        var defaultName = 'FirstPageComponent';
+        var defaultComponent = FirstPageComponent;
+        return (
+        &amp;lt;Navigator
+          initialRoute={ { name: defaultName, component: defaultComponent } }
+          configureScene={() =&amp;gt; {
+            return Navigator.SceneConfigs.VerticalDownSwipeJump;
+          }}
+          renderScene={(route, navigator) =&amp;gt; {
+            let Component = route.component;
+            if(route.component) {
+              return &amp;lt;Component {...route.params} navigator={navigator} /&amp;gt;
+            }
+          }} /&amp;gt;
+        );
+
+    }
+});
+&lt;/pre&gt;
+
+&lt;p&gt;initialRoute={ { name: defaultName, component: defaultComponent } } 这个指定了默认的页面，也就是启动app之后会看到界面的第一屏。 需要填写两个参数: name 跟 component。&lt;/p&gt;
+
+&lt;p&gt;configureScene 这个是页面之间跳转时候的动画，具体有哪些？可以看这个目录下，有源代码的: node_modules/react-native/Libraries/CustomComponents/Navigator/NavigatorSceneConfigs.js&lt;/p&gt;
+
+&lt;p&gt;renderScene,我们先看到回调里的两个参数:route, navigator。route里其实就是我们传递的name,component。navigator是一个Navigator的对象，这里是返回route.component组件，然后navigator作为props传递给了这个component，我们可以在FirstPageComponent里面通过props.navigator拿到。&lt;/p&gt;
+
+&lt;pre&gt;
+//FirstPageComponent.js
+var {
+    View,
+    Text,
+    TouchableOpacity
+} = React;
+
+var SecondPageComponent = require('./SecondPageComponent');
+
+var FirstPageComponent = React.create({
+    getInitialState: function() {
+        return {
+            id: 2,
+        };
+    },
+
+    componentDidMount: function() {
+    },
+
+    _pressButton: function() {
+        const { navigator } = this.props;
+        if(navigator) {
+            navigator.push({
+                name: 'SecondPageComponent',
+                component: SecondPageComponent,
+                //这里多出了一个 params 其实来自于Navigator 里的一个方法的参数...
+                params: {
+                    id: this.state.id
+                }
+            });
+        }
+    },
+
+    render: function() {
+        return (
+            &amp;lt;View&amp;gt;
+                &amp;lt;TouchableOpacity onPress={this._pressButton}&amp;gt;
+                    &amp;lt;Text&amp;gt;点我跳转并传递id&amp;lt;/Text&amp;gt;
+                &amp;lt;/TouchableOpacity&amp;gt;
+            &amp;lt;/View&amp;gt;
+        );
+    }
+});
+
+&lt;/pre&gt;
+
+&lt;p&gt;在index.ios.js里面有&lt;/p&gt;
+&lt;pre&gt;
+            return &amp;lt;Component {...route.params} navigator={navigator} /&amp;gt;
+
+&lt;/pre&gt;
+&lt;p&gt;“…“就是把route.params每个key作为props的一个属性，所以在FirstPageComponent.js设置的params值，将在它push到的页面接收到。&lt;/p&gt;
+
+&lt;pre&gt;
+//SecondPageComponent.js
+var {
+    View,
+    Text,
+    TouchableOpacity,
+} = React;
+
+var FirstPageComponent = require('./FirstPageComponent');
+
+var SecondPageComponent = React.create({
+    getInitialState: function() {
+        return {
+            id: null
+        };
+    },
+    componentDidMount: function() {
+        //这里获取从FirstPageComponent传递过来的参数: id
+        this.setState({
+            id: this.props.id
+        });
+    },
+    _pressButton: function() {
+        const { navigator } = this.props;
+        if(navigator) {
+            navigator.pop();
+        }
+    },
+    render: function() {
+        return (
+            &amp;lt;View&amp;gt;
+                &amp;lt;Text&amp;gt;获得的参数: id={ this.state.id }&amp;lt;/Text&amp;gt;
+                &amp;lt;TouchableOpacity onPress={this._pressButton}&amp;gt;
+                    &amp;lt;Text&amp;gt;点我跳回去&amp;lt;/Text&amp;gt;
+                &amp;lt;/TouchableOpacity&amp;gt;
+            &amp;lt;/View&amp;gt;
+        );
+    }
+});
+&lt;/pre&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://bbs.reactnative.cn/topic/20/%E6%96%B0%E6%89%8B%E7%90%86%E8%A7%A3navigator%E7%9A%84%E6%95%99%E7%A8%8B&quot;&gt;新手理解Navigator的教程&lt;/a&gt; 对于Navigator讲解的特别详细&lt;/p&gt;
+
+&lt;h3 id=&quot;react-native与原生交互&quot;&gt;react-native与原生交互&lt;/h3&gt;
+&lt;p&gt;在React Native中，一个“原生模块”就是一个实现了“RCTBridgeModule”协议的Objective-C类，其中RCT是ReaCT的缩写。&lt;/p&gt;
+
+&lt;p&gt;为了实现RCTBridgeModule协议，你的类需要包含RCT_EXPORT_MODULE()宏。这个宏也可以添加一个参数用来指定在Javascript中访问这个模块的名字。如果你不指定，默认就会使用这个Objective-C类的名字。&lt;/p&gt;
+
+&lt;p&gt;JS可以调用Native的方法，
+Native代码：&lt;/p&gt;
+&lt;pre&gt;
+RCT_EXPORT_METHOD(addEvent:(NSString *)name location:(NSString *)location (RCTResponseSenderBlock)callback)
+{
+  RCTLogInfo(@&quot;Pretending to create an event %@ at %@&quot;, name, location);
+  NSArray *events = ...
+  callback(@[[NSNull null], events]);
+}
+
+&lt;/pre&gt;
+
+&lt;p&gt;JS调用如下&lt;/p&gt;
+&lt;pre&gt;
+var CalendarManager = require('react-native').NativeModules.CalendarManager;
+CalendarManager.addEvent('Birthday Party', '4 Privet Drive, Surrey',(error,events) =&amp;gt; {
+        if (error) {
+            alert(error)
+        }else{
+           alert(events)
+        };
+});
+&lt;/pre&gt;
+
+&lt;p&gt;当然Native也可以调用JS
+native调用&lt;/p&gt;
+&lt;pre&gt;
+#import &quot;RCTBridge.h&quot;
+#import &quot;RCTEventDispatcher.h&quot;
+
+@implementation CalendarManager
+
+@synthesize bridge = _bridge;
+
+- (void)calendarEventReminderReceived:(NSNotification *)notification
+{
+  NSString *eventName = notification.userInfo[@&quot;name&quot;];
+  [self.bridge.eventDispatcher sendAppEventWithName:@&quot;EventReminder&quot;
+                                               body:@{@&quot;name&quot;: eventName}];
+}
+
+@end
+&lt;/pre&gt;
+
+&lt;p&gt;在JS中订阅该事件&lt;/p&gt;
+&lt;pre&gt;
+var { NativeAppEventEmitter } = require('react-native');
+
+var subscription = NativeAppEventEmitter.addListener(
+  'EventReminder',
+  (reminder) =&amp;gt; console.log(reminder.name)
+);
+...
+// 千万不要忘记忘记取消订阅, 通常在componentWillUnmount函数中实现。
+subscription.remove();
+&lt;/pre&gt;
+
+&lt;p&gt;基于上面的规则，react-native对很多原生模块进行了封装，比如UIView，他们实现RCTViewManager类，RCTViewManager实现了协议RCTBridgeModule，这样JS就可以使用native组件了。&lt;/p&gt;
+
+&lt;p&gt;默认的情况下，react-native只注册一个RCTRootView，&lt;/p&gt;
+&lt;pre&gt;
+RCTRootView *rootView = [[RCTRootView alloc] initWithBundleURL:jsCodeLocation
+                                                      moduleName:@&quot;CommunicateNativeDemo&quot;
+                                               initialProperties:nil
+                                                   launchOptions:launchOptions];
+
+  self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+  UIViewController *rootViewController = [UIViewController new];
+  rootViewController.view = rootView;
+  self.window.rootViewController = rootViewController;
+  [self.window makeKeyAndVisible];
+&lt;/pre&gt;
+
+&lt;pre&gt;
+AppRegistry.registerComponent('CommunicateNativeDemo', () =&amp;gt; CommunicateNativeDemo);
+
+&lt;/pre&gt;
+
+&lt;p&gt;上面代码中注册的RCTRootView就是整个程序的入口，当然如果你有多个入口或者其他方面的需求，也可以注册多个，不native的不同地方使用JS模块。&lt;/p&gt;
+&lt;pre&gt;
+AppRegistry.registerComponent('FirstView', () =&amp;gt; CommunicateNativeDemo);
+AppRegistry.registerComponent('SecondView', () =&amp;gt; CommunicateNativeDemo);
+AppRegistry.registerComponent('ThirdView', () =&amp;gt; CommunicateNativeDemo);
+
+&lt;/pre&gt;
+
+&lt;p&gt;然后把这三个组件通过RCTRootView加载到原生上&lt;/p&gt;
+&lt;pre&gt;
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.title = @&quot;First View&quot;;
+    AppDelegate *delegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:delegate.bridge moduleName:@&quot;FirstView&quot;];
+    rootView.frame = CGRectMake(20, 84, [UIScreen mainScreen].bounds.size.width - 40, 200);
+    [self.view addSubview:rootView];
+}
+&lt;/pre&gt;
+
+&lt;p&gt;react-native中Obj-C和JavaScript通信原理简单说一下，和我们经常用的bridge差不多，Obj-C调用JavaScript很简单，可以通过webview的stringByEvaluatingJavaScriptFromString:方法调用JavaScript代码；JavaScript调用Obj-C，则是通过web view的代理方法shouldStartLoadWithRequest：来接收JavaScript的网络请求从而实现调用。&lt;/p&gt;
+
+&lt;h3 id=&quot;es6与es5&quot;&gt;ES6与ES5&lt;/h3&gt;
+
+&lt;p&gt;ECMAScript 是 JavaScript 语言的国际标准，JavaScript 是 ECMAScript 的实现。ECMAScript 5和ECMAScript 6分别是2009年和2015年发布的，下面列出一些主要的ES6与ES5的不同写法。&lt;/p&gt;
+
+&lt;h6 id=&quot;引用&quot;&gt;引用&lt;/h6&gt;
+
+&lt;p&gt;在ES5里，如果使用CommonJS标准，引入React包基本通过require进行，代码类似这样：&lt;/p&gt;
+
+&lt;pre&gt;
+//ES5
+var React = require(&quot;react-native&quot;);
+var {
+    Image,
+    Text,
+    PropTypes
+} = React;  //引用不同的React Native组件
+&lt;/pre&gt;
+
+&lt;p&gt;在ES6里，import写法更为标准&lt;/p&gt;
+
+&lt;pre&gt;
+//ES6
+import React, {
+    Image, 
+    Text,
+    PropTypes
+} from 'react-native';
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;导出单个类&quot;&gt;导出单个类&lt;/h6&gt;
+
+&lt;p&gt;在ES5里，要导出一个类给别的模块用，一般通过module.exports来导出&lt;/p&gt;
+&lt;pre&gt;
+//ES5
+var MyComponent = React.createClass({
+    ...
+});
+module.exports = MyComponent;
+
+&lt;/pre&gt;
+&lt;p&gt;在ES6里，通常用export default来实现相同的功能：&lt;/p&gt;
+&lt;pre&gt;
+//ES6
+export default class MyComponent extends React.Component{
+    ...
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;给组件定义方法&quot;&gt;给组件定义方法&lt;/h6&gt;
+
+&lt;p&gt;给组件定义方法不再用 名字: function()的写法，而是直接用名字()，在方法的最后也不能有逗号了。&lt;/p&gt;
+&lt;pre&gt;
+//ES5 
+var Photo = React.createClass({
+    componentWillMount: function(){
+
+    },
+    render: function() {
+        return (
+            &amp;lt;Image source={this.props.source} /&amp;gt;
+        );
+    },
+});
+&lt;/pre&gt;
+&lt;pre&gt;
+//ES6
+class Photo extends React.Component {
+    componentWillMount() {
+
+    }
+    render() {
+        return (
+            &amp;lt;Image source={this.props.source} /&amp;gt;
+        );
+    }
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;定义组件的属性类型和默认属性&quot;&gt;定义组件的属性类型和默认属性&lt;/h6&gt;
+
+&lt;p&gt;在ES5里，属性类型和默认属性分别通过propTypes成员和getDefaultProps方法来实现&lt;/p&gt;
+&lt;pre&gt;
+//ES5 
+var Video = React.createClass({
+    getDefaultProps: function() {
+        return {
+            autoPlay: false,
+            maxLoops: 10,
+        };
+    },
+    propTypes: {
+        autoPlay: React.PropTypes.bool.isRequired,
+        maxLoops: React.PropTypes.number.isRequired,
+        posterFrameSrc: React.PropTypes.string.isRequired,
+        videoSrc: React.PropTypes.string.isRequired,
+    },
+    render: function() {
+        return (
+            &amp;lt;View /&amp;gt;
+        );
+    },
+});
+
+&lt;/pre&gt;
+&lt;p&gt;在ES6里，可以统一使用static成员来实现&lt;/p&gt;
+&lt;pre&gt;
+//ES6
+class Video extends React.Component {
+    static defaultProps = {
+        autoPlay: false,
+        maxLoops: 10,
+    };  // 注意这里有分号
+    static propTypes = {
+        autoPlay: React.PropTypes.bool.isRequired,
+        maxLoops: React.PropTypes.number.isRequired,
+        posterFrameSrc: React.PropTypes.string.isRequired,
+        videoSrc: React.PropTypes.string.isRequired,
+    };  // 注意这里有分号
+    render() {
+        return (
+            &amp;lt;View /&amp;gt;
+        );
+    } // 注意这里既没有分号也没有逗号
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;初始化state&quot;&gt;初始化state&lt;/h6&gt;
+
+&lt;pre&gt;
+//ES5 
+var Video = React.createClass({
+    getInitialState: function() {
+        return {
+            loopsRemaining: this.props.maxLoops,
+        };
+    },
+})
+&lt;/pre&gt;
+&lt;p&gt;ES6下，有两种写法：&lt;/p&gt;
+
+&lt;pre&gt;
+//ES6
+class Video extends React.Component {
+    state = {
+        loopsRemaining: this.props.maxLoops,
+    }
+}
+&lt;/pre&gt;
+&lt;p&gt;不过我们推荐更易理解的在构造函数中初始化（这样你还可以根据需要做一些计算）：&lt;/p&gt;
+
+&lt;pre&gt;
+//ES6
+class Video extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {
+            loopsRemaining: this.props.maxLoops,
+        };
+    }
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;把方法作为回调提供&quot;&gt;把方法作为回调提供&lt;/h6&gt;
+
+&lt;p&gt;在JS中，this指的是，调用函数的那个对象。在ES5下，React.createClass会把所有的方法都bind一遍，这样可以提交到任意的地方作为回调函数，而this不会变化。&lt;/p&gt;
+&lt;pre&gt;
+//ES5
+var PostInfo = React.createClass({
+    handleOptionsButtonClick: function(e) {
+        // Here, 'this' refers to the component instance.
+        this.setState({showOptionsModal: true});
+    },
+    render: function(){
+        return (
+            &amp;lt;TouchableHighlight onPress={this.handleOptionsButtonClick}&amp;gt;
+                &amp;lt;Text&amp;gt;{this.props.label}&amp;lt;/Text&amp;gt;
+            &amp;lt;/TouchableHighlight&amp;gt;
+        )
+    },
+});
+
+&lt;/pre&gt;
+
+&lt;p&gt;在ES6下，你需要通过bind来绑定this引用，或者使用箭头函数（它会绑定当前scope的this引用）来调用&lt;/p&gt;
+
+&lt;pre&gt;
+//ES6
+class PostInfo extends React.Component
+{
+    handleOptionsButtonClick(e){
+        this.setState({showOptionsModal: true});
+    }
+    render(){
+        return (
+            &amp;lt;TouchableHighlight 
+                onPress={this.handleOptionsButtonClick.bind(this)}
+                onPress={e=&amp;gt;this.handleOptionsButtonClick(e)}
+                &amp;gt;
+                &amp;lt;Text&amp;gt;{this.props.label}&amp;lt;/Text&amp;gt;
+            &amp;lt;/TouchableHighlight&amp;gt;
+        )
+    },
+}
+&lt;/pre&gt;
+
+&lt;p&gt;需要注意的是，不论是bind还是箭头函数，每次被执行都返回的是一个新的函数引用，因此如果你还需要函数的引用去做一些别的事情（譬如卸载监听器），那么你必须自己保存这个引用&lt;/p&gt;
+
+&lt;pre&gt;
+// 错误的做法
+class PauseMenu extends React.Component{
+    componentWillMount(){
+        AppStateIOS.addEventListener('change', this.onAppPaused.bind(this));
+    }
+    componentDidUnmount(){
+        AppStateIOS.removeEventListener('change', this.onAppPaused.bind(this));
+    }
+    onAppPaused(event){
+    }
+}
+
+&lt;/pre&gt;
+&lt;pre&gt;
+// 正确的做法
+class PauseMenu extends React.Component{
+    constructor(props){
+        super(props);
+        this._onAppPaused = this.onAppPaused.bind(this);
+    }
+    componentWillMount(){
+        AppStateIOS.addEventListener('change', this._onAppPaused);
+    }
+    componentDidUnmount(){
+        AppStateIOS.removeEventListener('change', this._onAppPaused);
+    }
+    onAppPaused(event){
+    }
+}
+&lt;/pre&gt;
+&lt;p&gt;当然你也可以这样做&lt;/p&gt;
+&lt;pre&gt;
+// 正确的做法
+class PauseMenu extends React.Component{
+    componentWillMount(){
+        AppStateIOS.addEventListener('change', this.onAppPaused);
+    }
+    componentDidUnmount(){
+        AppStateIOS.removeEventListener('change', this.onAppPaused);
+    }
+    onAppPaused = (event) =&amp;gt; {
+        //把方法直接作为一个arrow function的属性来定义，初始化的时候就绑定好了this指针
+    }
+}
+&lt;/pre&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://bbs.reactnative.cn/topic/15/react-react-native-%E7%9A%84es5-es6%E5%86%99%E6%B3%95%E5%AF%B9%E7%85%A7%E8%A1%A8&quot;&gt;React/React Native 的ES5 ES6写法对照表
+&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;promise&quot;&gt;Promise&lt;/h3&gt;
+
+&lt;p&gt;其实已经有一些第三方库实现了 Promise 的功能：Q、when、WinJS、RSVP.js，这些库和 JavaScript 原生 Promise 都遵守一个通用的、标准化的规范：CommonJS组织制定的异步模式编程规范Promises/A+，jQuery 有个类似的方法叫 Deferred，但不兼容 Promises/A+ 规范，于是会有点小问题，使用需谨慎。jQuery 还有一个 Promise 类型，它其实是 Deferred 的缩减版，所以也有同样问题。&lt;/p&gt;
+
+&lt;p&gt;JavaScript是从ES6提供Promise对象的，这里简单讲一下原生的Promise。&lt;/p&gt;
+
+&lt;p&gt;Promise 对象代表一个异步操作，有三种状态：Pending（进行中）、Resolved（已完成，又称 Fulfilled）和 Rejected（已失败）。Promise 对象的状态改变，只有两种可能：从 Pending 变为 Resolved 和从 Pending 变为 Rejected。只要这两种情况发生，状态就凝固了，不会再变了，会一直保持这个结果。就算改变已经发生了，你再对 Promise 对象添加回调函数，也会立即得到这个结果。这与事件（Event）完全不同，事件的特点是，如果你错过了它，再去监听，是得不到结果的。&lt;/p&gt;
+
+&lt;pre&gt;
+var promise = new Promise(function(resolve, reject) {
+ if (/* 异步操作成功 */){
+ resolve(value);
+ } else {
+ reject(error);
+ }
+});
+
+promise.then(function(value) {
+ // success
+}, function(value) {
+ // failure
+});
+&lt;/pre&gt;
+
+&lt;p&gt;Promise很好的解决了异步调用的问题，但是ES7 中有了更加标准的解决方案，新增了 async/await 两个关键词。async 可以声明一个异步函数，此函数需要返回一个 Promise 对象。await 可以等待一个 Promise 对象 resolve，并拿到结果。&lt;/p&gt;
+
+&lt;p&gt;async/await 究竟是怎么解决异步调用的写法呢？简单来说，就是将异步操作用同步的写法来写。先来看下最基本的语法（ES7 代码片段）：&lt;/p&gt;
+&lt;pre&gt;
+const f = () =&amp;gt; {
+  return new Promise((resolve, reject) =&amp;gt; {
+    setTimeout(() =&amp;gt; {
+      resolve(123);
+    }, 2000);
+  });
+};
+
+const testAsync = async () =&amp;gt; {
+  const t = await f();
+  console.log(t);
+};
+
+testAsync();
+&lt;/pre&gt;
+
+&lt;p&gt;对比 Promise&lt;/p&gt;
+
+&lt;pre&gt;
+const f = () =&amp;gt; {
+  return new Promise((resolve, reject) =&amp;gt; {
+    setTimeout(() =&amp;gt; {
+      resolve(123);
+    }, 2000);
+  });
+};
+
+const testAsync = () =&amp;gt; {
+  f().then((t) =&amp;gt; {
+    console.log(t);
+  });
+};
+
+testAsync();
+&lt;/pre&gt;
+
+&lt;p&gt;关于异步编程，JS里面还另一种访问就是RxJS，Reactive Programming，RP是什么，RP是针对异步数据流的编程，一定程度而言，RP并不算新的概念。Event Bus、点击事件都是异步流。Rx最近比较流行，下次有时间再看吧！&lt;/p&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.html5rocks.com/zh/tutorials/es6/promises/&quot;&gt;JavaScript Promises&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.jianshu.com/p/063f7e490e9a&quot;&gt;Javascript 中的神器——Promise&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://segmentfault.com/a/1190000002566697&quot;&gt;JavaScript ES7 中使用 async/await 解决回调函数嵌套问题&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://blog.leancloud.cn/3910/?utm_source=tuicool&amp;amp;utm_medium=referral&quot;&gt;「大概可能也许是」目前最好的 JavaScript 异步方案 async/await&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://segmentfault.com/a/1190000004293922&quot;&gt;RxJS 教程&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;fetch&quot;&gt;fetch&lt;/h3&gt;
+
+&lt;p&gt;JavaScript很长时间通过XMLHttpRequest来执行异步网络请求，XMLHttpRequest是基于事件的。&lt;a href=&quot;https://github.com/github/fetch&quot;&gt;fetch&lt;/a&gt;则是通过Promise来实现的，fetch的返回值是一个Promise对象&lt;/p&gt;
+
+&lt;pre&gt;
+fetch('https://mywebsite.com/endpoint/', {
+  method: 'POST',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    firstParam: 'yourValue',
+    secondParam: 'yourOtherValue',
+  })
+})
+&lt;/pre&gt;
+
+&lt;p&gt;如果要异步操作的话&lt;/p&gt;
+&lt;pre&gt;
+fetch('https://mywebsite.com/endpoint.php')
+  .then((response) =&amp;gt; response.text())
+  .then((responseText) =&amp;gt; {
+    console.log(responseText);
+  })
+  .catch((error) =&amp;gt; {
+    console.warn(error);
+  });
+&lt;/pre&gt;
+
+&lt;p&gt;使用ES7的async/await语法来发起一个异步调用&lt;/p&gt;
+&lt;pre&gt;
+async getUsersFromApi() {
+  try {
+    let response = await fetch('https://mywebsite.com/endpoint/');
+    return response.users;
+  } catch(error) {
+    throw error;
+  }
+}
+&lt;/pre&gt;
+
+&lt;p&gt;ES6中还有生成器（Generator），promise 和生成器（Generator）为开发者进行异步编程带来了极大便利。&lt;/p&gt;
+
+&lt;p&gt;生成器函数其实是基于迭代器实现的，并且有如下的结构：&lt;/p&gt;
+&lt;pre&gt;
+function *myIterator() {
+    while(condition) {
+        yield value;    
+    }   
+}
+&lt;/pre&gt;
+
+&lt;p&gt;yield关键字负责返回结果，它会暂停迭代器函数的执行直到它被再一次的调用。它也会记住函数的状态， 而不是在下次执行的时候重新运行一切，它能够有效的记住上一次暂停的地方。&lt;/p&gt;
+
+&lt;p&gt;将Fetch API和生成器组合起来使用的一个场景是长轮询。 长轮询是一种通过客户端不断发送请求给服务器直到获得响应的技术。生成器可以用于这样的场景来不断的yielding响应直到响应包含数据。&lt;/p&gt;
+
+&lt;p&gt;现在让我们编写生成器函数来不断的调用这个API，每次迭代会返回一个Promise对象。&lt;/p&gt;
+&lt;pre&gt;
+    function *pollForWeatherInfo() {
+        while(true) {
+            yield fetch('/api/currentWeather', {
+                method: 'get'   
+            }).then(d =&amp;gt; d.json()); 
+        }   
+    }
+&lt;/pre&gt;
+
+&lt;p&gt;我们需要一个函数来不断的调用这个函数，并且检查每次返回的Promise是否存在天气信息。 可以使用一个在下一次迭代时调用的递归函数来实现，并且只在发现了从服务器返回的值的时候才暂停这一过程。 下面的代码展示了上述过程的实现&lt;/p&gt;
+&lt;pre&gt;
+function runPolling(generator){
+    if(!generator){
+        generator = pollForWeatherInfo();
+    }
+
+    var p = generator.next();
+    p.value.then(function(d){
+        if(!d.temperature){
+            runPolling(generator);
+        } else {
+            console.log(d);
+        }
+    });
+}
+
+runPolling();
+&lt;/pre&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/sravikiran/FetchAPI-Generators&quot;&gt;示例代码源码-FetchAPI-Generators&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://wwsun.github.io/posts/async-api-using-fetch-and-generators.html&quot;&gt;使用Fetch API和ES6生成器来构建异步API&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;npm&quot;&gt;npm&lt;/h3&gt;
+
+&lt;p&gt;react-native开发环境需要使用node.js,npm是Node.js默认的模块管理器，是一个命令行下的软件，用来安装和管理node模块。&lt;/p&gt;
+
+&lt;p&gt;Node模块采用npm install命令安装。每个模块可以“全局安装”，也可以“本地安装”。两者的差异是模块的安装位置，以及调用方法。&lt;/p&gt;
+
+&lt;p&gt;“全局安装”指的是将一个模块直接下载到Node的安装目录中，各个项目都可以调用。“本地安装”指的是将一个模块下载到当前目录的node_modules子目录，然后只有在当前目录和它的子目录之中，才能调用这个模块。一般来说，全局安装只适用于工具模块，比如npm和grunt。&lt;/p&gt;
+
+&lt;p&gt;默认情况下，npm install命令是“本地安装”某个模块。&lt;/p&gt;
+
+&lt;pre&gt;
+$ npm install [package name]
+$ npm install git://github.com/package/path.git
+$ npm install git://github.com/package/path.git#0.1.0
+$ npm install sax@latest
+$ npm install sax@0.1.1
+$ npm install sax@&quot;&amp;gt;=0.1.0 &amp;lt;0.2.0&quot;
+&lt;/pre&gt;
+
+&lt;p&gt;使用global参数，可以“全局安装”某个模块。global参数可以被简化成g参数。&lt;/p&gt;
+
+&lt;pre&gt;
+$ sudo npm install -global [package name]
+$ sudo npm install -g [package name]
+&lt;/pre&gt;
+
+&lt;p&gt;–save：模块名将被添加到packages.json文件的dependencies，可以简化为参数-S。
+–save-dev: 模块名将被添加到packages.json文件的devDependencies，可以简化为参数-D。&lt;/p&gt;
+
+&lt;pre&gt;
+$ npm install sax --save
+$ npm install node-tap --save-dev
+ 或者
+$ npm install sax -S
+$ npm install node-tap -D
+&lt;/pre&gt;
+
+&lt;p&gt;npm install默认会安装dependencies字段和devDependencies字段中的所有模块，如果使用production参数，可以只安装dependencies字段的模块。&lt;/p&gt;
+
+&lt;pre&gt;
+$ npm install --production
+
+&lt;/pre&gt;
+
+&lt;p&gt;dependencies是项目中依赖的模块，如果你想要开发自己的npm模块，如果有人要使用，那么他们可能不需要你开发使用的外部测试或者文档框架。在这种情况下，最好将这些附属的项目列在devDependencies中。&lt;/p&gt;
+
+&lt;p&gt;参考链接：&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://javascript.ruanyifeng.com/nodejs/npm.html&quot;&gt;npm模块管理器&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/ericdum/mujiang.info/issues/6&quot;&gt;npm的package.json中文文档&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://js.coach/react-native/&quot;&gt;react-native组件库&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;转载请注原文链接:https://github.com/coderyi/blog/blob/master/articles/2016/0122_react-native_first_lesson.md&lt;/p&gt;
+
+</description>
+        <pubDate>Fri, 22 Jan 2016 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/react-native_first_lesson/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/react-native_first_lesson/</guid>
+        
+        <category>跨平台</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>Objective-C代码注入－拦截NSURLConnection的消息</title>
+        <description>&lt;p&gt;2015.11.11&lt;/p&gt;
+
+&lt;h5 id=&quot;混淆一个方法&quot;&gt;混淆一个方法&lt;/h5&gt;
+
+&lt;pre&gt;
+    Class class = objc_getMetaClass(class_getName([NSURLConnection class]));
+    SEL originalSelector = @selector(sendAsynchronousRequest:queue:completionHandler:);
+    SEL swizzledSelector =NSSelectorFromString([NSString stringWithFormat:@&quot;_coderyi_swizzle_%x_%@&quot;, arc4random(), NSStringFromSelector(selector)]);
+&lt;/pre&gt;
+&lt;p&gt;其实在ObjC中class有两种，一个是对象，一个是类，[NSURLConnection class]或者objc_getClass获取到的是objc_object，而objc_getMetaClass获取到的是objc_class，这里因为sendAsynchronousRequest:queue:completionHandler:是类方法，所有需要使用objc_getMetaClass。objc_class可以通过objc_object的isa.cls获得。&lt;/p&gt;
+
+&lt;h5 id=&quot;消息和方法的动态绑定&quot;&gt;消息和方法的动态绑定&lt;/h5&gt;
+
+&lt;pre&gt;
+        typedef void (^NSURLConnectionAsyncCompletion)(NSURLResponse* response, NSData* data, NSError* connectionError);
+        
+        void (^asyncSwizzleBlock)(Class, NSURLRequest *, NSOperationQueue *, NSURLConnectionAsyncCompletion) = ^(Class slf, NSURLRequest *request, NSOperationQueue *queue, NSURLConnectionAsyncCompletion completion) {
+                NSLog(@&quot;i get the request url:  %@&quot;,request.URL);
+ 
+                ((void(*)(id, SEL, id, id, id))objc_msgSend)(slf, swizzledSelector, request, queue, completion);
+
+        };
+        
+        
+    Method originalMethod = class_getInstanceMethod(class, originalSelector);
+    if (!originalMethod) {
+        return;
+    }
+    
+    IMP implementation = imp_implementationWithBlock(asyncSwizzleBlock);
+    class_addMethod(class, swizzledSelector, implementation, method_getTypeEncoding(originalMethod));
+    Method newMethod = class_getInstanceMethod(class, swizzledSelector);
+    method_exchangeImplementations(originalMethod, newMethod);
+&lt;/pre&gt;
+
+&lt;p&gt;这里主要是把自己的消息增加到NSURLConnection类中，并且这条消息会经过asyncSwizzleBlock,block会实现这个方法，这样就能够拦截sendAsynchronousRequest:queue:completionHandler:消息的内容，包括请求的URL等。&lt;/p&gt;
+
+&lt;p&gt;imp_implementationWithBlock的作用是方法被调用的时候，创建一个函数指针，这样就会调用这个block了，在block里面你可以知道这个消息的细节，并且你必须需要自己发送这个消息，你可以通过objc_msgSend函数完成。&lt;/p&gt;
+
+&lt;p&gt;objc_msgSend的函数具体是这样的，你需要把方法的返回值，以及每一个参数加上。&lt;/p&gt;
+&lt;pre&gt;
+id objc_msgSend(id self, SEL op, arg1, arg2, ...)
+&lt;/pre&gt;
+
+&lt;p&gt;关于swizzledSelector你首先需要通过class_addMethod加入到class的方法里面，然后再把刚刚加入的混淆方法，替换掉旧的方法，你可以通过method_exchangeImplementations函数实现。&lt;/p&gt;
+
+&lt;p&gt;注意class_addMethod将会覆盖父类的方法，但不会取代本类的方法，如果需要取代本类，可以用method_setImplementation等函数实现，这里就用method_exchangeImplementations。&lt;/p&gt;
+
+&lt;h5 id=&quot;获取哪些类实现了delegate&quot;&gt;获取哪些类实现了delegate&lt;/h5&gt;
+
+&lt;pre&gt;
+        const SEL selectors[] = {
+            @selector(connection:willSendRequest:redirectResponse:),
+            @selector(connection:didReceiveResponse:),
+        };
+        
+        const int numSelectors = sizeof(selectors) / sizeof(SEL);
+        
+        Class *classes = NULL;
+        int numClasses = objc_getClassList(NULL, 0);
+        
+        if (numClasses &amp;gt; 0) {
+            classes = (__unsafe_unretained Class *)malloc(sizeof(Class) * numClasses);
+            numClasses = objc_getClassList(classes, numClasses);//获取项目中所有的类
+            for (NSInteger classIndex = 0; classIndex &amp;lt; numClasses; ++classIndex) {
+                Class class = classes[classIndex];
+                
+                if (class == [NetworkObserver class]) {
+                    continue;
+                }
+                
+                unsigned int methodCount = 0;
+                Method *methods = class_copyMethodList(class, &amp;amp;methodCount);
+                BOOL matchingSelectorFound = NO;
+                for (unsigned int methodIndex = 0; methodIndex &amp;lt; methodCount; methodIndex++) {
+                    for (int selectorIndex = 0; selectorIndex &amp;lt; numSelectors; ++selectorIndex) {
+                        if (method_getName(methods[methodIndex]) == selectors[selectorIndex]) {
+                            [self injectWillSendRequestIntoDelegateClass:class];
+                            [self injectDidReceiveResponseIntoDelegateClass:class];
+                            matchingSelectorFound = YES;
+                            break;
+                        }
+                    }
+                    if (matchingSelectorFound) {
+                        break;
+                    }
+                }
+                free(methods);
+            }
+            
+            free(classes);
+        }
+&lt;/pre&gt;
+
+&lt;p&gt;这里的作用是扫描项目中有哪些类实现了NSURLConnectionDataDelegate的connection:willSendRequest:redirectResponse:和connection:didReceiveResponse:方法，objc_getClassList函数就是获取项目中所有的类，扫描每一个类，当得到一个类之后你可以通过class_copyMethodList函数获取到所有的方法，然后你就可以对相应的类注入自己的方法了。&lt;/p&gt;
+
+&lt;h5 id=&quot;动态绑定delegate的消息&quot;&gt;动态绑定delegate的消息&lt;/h5&gt;
+
+&lt;div class=&quot;language-objectivec highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;SEL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;@selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;willSendRequest&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;redirectResponse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;SEL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;swizzledSelector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;SwizzleUtility&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;swizzledSelectorForSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;Protocol&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;@protocol&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;NSURLConnectionDataDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;protocol&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;@protocol&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;NSURLConnectionDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;objc_method_description&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;methodDescription&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;protocol_getMethodDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;protocol&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NO&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;YES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLConnectionWillSendRequestBlock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLConnectionDelegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLConnection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLResponse&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;NSURLConnectionWillSendRequestBlock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;undefinedBlock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLConnectionDelegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLConnection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLResponse&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NetworkObserver&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sharedObserver&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;willSendRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;redirectResponse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;NSURLConnectionWillSendRequestBlock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implementationBlock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSURLConnectionDelegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLConnection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLResponse&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;__block&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NSURLRequest&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;returnValue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;undefinedBlock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;returnValue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SEL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;objc_msgSend&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;slf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;swizzledSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;returnValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;IMP&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;imp_implementationWithBlock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cls&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;instancesRespondToSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implementationBlock&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;undefinedBlock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;Method&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;oldMethod&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;class_getInstanceMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cls&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;oldMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;class_addMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cls&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;swizzledSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implementation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;methodDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;types&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        
+        &lt;span class=&quot;n&quot;&gt;Method&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newMethod&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;class_getInstanceMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cls&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;swizzledSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        
+        &lt;span class=&quot;n&quot;&gt;method_exchangeImplementations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;oldMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;class_addMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cls&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implementation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;methodDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;types&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;因为class_addMethod时候需要关于方法的描述，所以需要NSURLConnectionDataDelegate中connection:willSendRequest:redirectResponse:的方法描述，可以通过函数protocol_getMethodDescription获得，关方法的实现block需要判断类(这里是ViewController实现了delegate)是否实现该方法，如果没有实现则到此为止，如果有实现connection:willSendRequest:redirectResponse:方法则需要在拦截到消息之后再把消息发送出去。&lt;/p&gt;
+
+&lt;p&gt;以上代码，来自我写的一个Demo,&lt;a href=&quot;https://github.com/coderyi/iOSDemos/tree/master/ObjCInjectCodeDemo&quot;&gt;ObjCInjectCodeDemo&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;我演示的是拦截网络请求，当然你如果需要这方面的功能，可以看看我写的网路调试库,&lt;a href=&quot;https://github.com/coderyi/NetworkEye&quot;&gt;NetworkEye&lt;/a&gt;，NetworkEye用的是NSURLProtocol，并不是这个。&lt;/p&gt;
+
+&lt;h4 id=&quot;参考链接&quot;&gt;参考链接&lt;/h4&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/library/mac/documentation/Cocoa/Reference/ObjCRuntimeRef/&quot;&gt;Apple Objective-C Runtime Reference&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://opensource.apple.com/tarballs/objc4/&quot;&gt;apple runtime source code&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Introduction/Introduction.html&quot;&gt;Objective-C Runtime Programming Guide&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://wenku.baidu.com/view/1e06c9a20029bd64783e2cd1.htm&quot;&gt;Objective-C Runtime Programming Guide 中文&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/&quot;&gt;Objective-C Runtime 运行时之一：类与对象&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;转载请附本文链接&lt;a href=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/1111_objective-c_inject_code.md&quot;&gt;https://github.com/coderyi/blog/blob/master/articles/2015/1111_objective-c_inject_code.md&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 11 Nov 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/objective-c_inject_code/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/objective-c_inject_code/</guid>
+        
+        <category>Objective-C</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>ffmpeg在iOS的使用-iFrameExtractor源码解析</title>
+        <description>&lt;p&gt;iFrameExtractor地址:&lt;a href=&quot;https://github.com/lajos/iFrameExtractor&quot;&gt;https://github.com/lajos/iFrameExtractor&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;ffmpeg的简介&quot;&gt;ffmpeg的简介&lt;/h2&gt;
+
+&lt;p&gt;FFmpeg是一套可以用来记录、转换数字音频、视频，并能将其转化为流的开源计算机程序。&lt;/p&gt;
+
+&lt;p&gt;“FFmpeg”这个单词中的”FF”指的是”Fast Forward”。&lt;/p&gt;
+
+&lt;h6 id=&quot;ffmpeg支持的格式&quot;&gt;ffmpeg支持的格式&lt;/h6&gt;
+
+&lt;p&gt;ASF&lt;/p&gt;
+
+&lt;p&gt;AVI&lt;/p&gt;
+
+&lt;p&gt;BFI&lt;/p&gt;
+
+&lt;p&gt;FLV&lt;/p&gt;
+
+&lt;p&gt;GXF, General eXchange Format, SMPTE 360M&lt;/p&gt;
+
+&lt;p&gt;IFF&lt;/p&gt;
+
+&lt;p&gt;RL2&lt;/p&gt;
+
+&lt;p&gt;ISO base media file format（包括QuickTime, 3GP和MP4）&lt;/p&gt;
+
+&lt;p&gt;Matroska（包括WebM）&lt;/p&gt;
+
+&lt;p&gt;Maxis XA&lt;/p&gt;
+
+&lt;p&gt;MPEG program stream&lt;/p&gt;
+
+&lt;p&gt;MPEG transport stream（including AVCHD）&lt;/p&gt;
+
+&lt;p&gt;MXF, Material eXchange Format, SMPTE 377M&lt;/p&gt;
+
+&lt;p&gt;MSN Webcam stream&lt;/p&gt;
+
+&lt;p&gt;Ogg&lt;/p&gt;
+
+&lt;p&gt;OMA&lt;/p&gt;
+
+&lt;p&gt;TXD&lt;/p&gt;
+
+&lt;p&gt;WTV&lt;/p&gt;
+
+&lt;h6 id=&quot;ffmpeg支持的协议&quot;&gt;ffmpeg支持的协议&lt;/h6&gt;
+
+&lt;p&gt;IETF标准：TCP, UDP, Gopher, HTTP, RTP, RTSP和SDP&lt;/p&gt;
+
+&lt;p&gt;苹果公司的相关标准：HTTP Live Streaming&lt;/p&gt;
+
+&lt;p&gt;RealMedia的相关标准：RealMedia RTSP/RDT&lt;/p&gt;
+
+&lt;p&gt;Adobe的相关标准：RTMP, RTMPT（由librtmp实现），RTMPE（由librtmp实现），RTMPTE（由librtmp）和RTMPS（由librtmp实现）&lt;/p&gt;
+
+&lt;p&gt;微软的相关标准：MMS在TCP上和MMS在HTTP上&lt;/p&gt;
+
+&lt;h2 id=&quot;iframeextractor的使用&quot;&gt;iFrameExtractor的使用&lt;/h2&gt;
+
+&lt;p&gt;初始化&lt;/p&gt;
+&lt;pre&gt;
+self.video = [[VideoFrameExtractor alloc] initWithVideo:[Utilities bundlePath:@&quot;sophie.mov&quot;]];
+
+	video.outputWidth = 426;
+	video.outputHeight = 320;
+&lt;/pre&gt;
+
+&lt;p&gt;播放&lt;/p&gt;
+
+&lt;pre&gt;
+	[video seekTime:0.0];
+	[NSTimer scheduledTimerWithTimeInterval:1.0/30
+									 target:self
+								   selector:@selector(displayNextFrame:)
+								   userInfo:nil
+									repeats:YES];
+&lt;/pre&gt;
+
+&lt;pre&gt;
+-(void)displayNextFrame:(NSTimer *)timer {
+	if (![video stepFrame]) {
+
+		return;
+	}
+	imageView.image = video.currentImage;
+
+}
+&lt;/pre&gt;
+
+&lt;h2 id=&quot;videoframeextractor类解析&quot;&gt;VideoFrameExtractor类解析&lt;/h2&gt;
+
+&lt;h6 id=&quot;initwithvideonsstring-moviepath方法&quot;&gt;initWithVideo:(NSString *)moviePath方法&lt;/h6&gt;
+
+&lt;p&gt;VideoFrameExtractor的初始化，主要是配置三个全局的结构体变量。&lt;/p&gt;
+
+&lt;p&gt;AVFormatContext类型的pFormatCtx，AVFormatContext主要存储视音频封装格式中包含的信息；AVInputFormat存储输入视音频使用的封装格式。每种视音频封装格式都对应一个AVInputFormat 结构。&lt;/p&gt;
+
+&lt;p&gt;AVCodecContext类型的pCodecCtx ，每个AVStream存储一个视频/音频流的相关数据；每个AVStream对应一个AVCodecContext，存储该视频/音频流使用解码方式的相关数据；每个AVCodecContext中对应一个AVCodec，包含该视频/音频对应的解码器。每种解码器都对应一个AVCodec结构。&lt;/p&gt;
+
+&lt;p&gt;AVFrame类型的pFrame，视频的话，每个结构一般是存一帧，音频可能有好几帧。解码前数据是AVPacket，解码后数据是AVFrame。&lt;/p&gt;
+
+&lt;p&gt;FMPEG中结构体很多。最关键的结构体他们之间的对应关系如下所示：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://img.blog.csdn.net/20130914204051125?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbGVpeGlhb2h1YTEwMjA=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center&quot; width=&quot;440&quot; height=&quot;179&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;图片来自:&lt;a href=&quot;http://blog.csdn.net/leixiaohua1020/article/details/11693997&quot;&gt;FFMPEG中最关键的结构体之间的关系&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;下面就是初始化的代码&lt;/p&gt;
+&lt;pre&gt;
+-(id)initWithVideo:(NSString *)moviePath {
+	if (!(self=[super init])) return nil;
+ 
+    AVCodec         *pCodec;
+		
+    // Register all formats and codecs
+    avcodec_register_all();
+    av_register_all();
+	
+    // Open video file
+    if(avformat_open_input(&amp;amp;pFormatCtx, [moviePath cStringUsingEncoding:NSASCIIStringEncoding], NULL, NULL) != 0) {
+        av_log(NULL, AV_LOG_ERROR, &quot;Couldn't open file\n&quot;);
+        goto initError;
+    }
+	
+    // Retrieve stream information
+    if(avformat_find_stream_info(pFormatCtx,NULL) &amp;lt; 0) {
+        av_log(NULL, AV_LOG_ERROR, &quot;Couldn't find stream information\n&quot;);
+        goto initError;
+    }
+    
+    // Find the first video stream
+    if ((videoStream =  av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, &amp;amp;pCodec, 0)) &amp;lt; 0) {
+        av_log(NULL, AV_LOG_ERROR, &quot;Cannot find a video stream in the input file\n&quot;);
+        goto initError;
+    }
+	
+    // Get a pointer to the codec context for the video stream
+    pCodecCtx = pFormatCtx-&amp;gt;streams[videoStream]-&amp;gt;codec;
+    
+    // Find the decoder for the video stream
+    pCodec = avcodec_find_decoder(pCodecCtx-&amp;gt;codec_id);
+    if(pCodec == NULL) {
+        av_log(NULL, AV_LOG_ERROR, &quot;Unsupported codec!\n&quot;);
+        goto initError;
+    }
+	
+    // Open codec
+    if(avcodec_open2(pCodecCtx, pCodec, NULL) &amp;lt; 0) {
+        av_log(NULL, AV_LOG_ERROR, &quot;Cannot open video decoder\n&quot;);
+        goto initError;
+    }
+	
+    // Allocate video frame
+    pFrame = avcodec_alloc_frame();
+			
+	outputWidth = pCodecCtx-&amp;gt;width;
+	self.outputHeight = pCodecCtx-&amp;gt;height;
+			
+	return self;
+	
+initError:
+	[self release];
+	return nil;
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;sourcewidth和sourceheight方法&quot;&gt;sourceWidth和sourceHeight方法&lt;/h6&gt;
+
+&lt;p&gt;获取屏幕的宽和高&lt;/p&gt;
+&lt;pre&gt;
+-(int)sourceWidth {
+	return pCodecCtx-&amp;gt;width;
+}
+
+-(int)sourceHeight {
+	return pCodecCtx-&amp;gt;height;
+}
+
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;setupscaler方法&quot;&gt;setupScaler方法&lt;/h6&gt;
+
+&lt;p&gt;设置视频播放视图的尺寸&lt;/p&gt;
+&lt;pre&gt;
+-(void)setupScaler {
+
+	// Release old picture and scaler
+	avpicture_free(&amp;amp;picture);
+	sws_freeContext(img_convert_ctx);	
+	
+	// Allocate RGB picture
+	avpicture_alloc(&amp;amp;picture, PIX_FMT_RGB24, outputWidth, outputHeight);
+	
+	// Setup scaler
+	static int sws_flags =  SWS_FAST_BILINEAR;
+	img_convert_ctx = sws_getContext(pCodecCtx-&amp;gt;width, 
+									 pCodecCtx-&amp;gt;height,
+									 pCodecCtx-&amp;gt;pix_fmt,
+									 outputWidth, 
+									 outputHeight,
+									 PIX_FMT_RGB24,
+									 sws_flags, NULL, NULL, NULL);
+	
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;duration方法&quot;&gt;duration方法&lt;/h6&gt;
+
+&lt;p&gt;获取音视频文件的总时间&lt;/p&gt;
+&lt;pre&gt;
+-(double)duration {
+	return (double)pFormatCtx-&amp;gt;duration / AV_TIME_BASE;
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;currenttime方法&quot;&gt;currentTime方法&lt;/h6&gt;
+
+&lt;p&gt;显示音视频当前播放的时间&lt;/p&gt;
+&lt;pre&gt;
+-(double)currentTime {
+    AVRational timeBase = pFormatCtx-&amp;gt;streams[videoStream]-&amp;gt;time_base;
+    return packet.pts * (double)timeBase.num / timeBase.den;
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;seektimedoubleseconds方法&quot;&gt;seekTime:(double)seconds方法&lt;/h6&gt;
+
+&lt;p&gt;直接跳到音视频的第seconds秒进行播放，默认从第0.0秒开始&lt;/p&gt;
+&lt;pre&gt;
+-(void)seekTime:(double)seconds {
+	AVRational timeBase = pFormatCtx-&amp;gt;streams[videoStream]-&amp;gt;time_base;
+	int64_t targetFrame = (int64_t)((double)timeBase.den / timeBase.num * seconds);
+	avformat_seek_file(pFormatCtx, videoStream, targetFrame, targetFrame, targetFrame, AVSEEK_FLAG_FRAME);
+	avcodec_flush_buffers(pCodecCtx);
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;stepframe方法&quot;&gt;stepFrame方法&lt;/h6&gt;
+
+&lt;p&gt;解码视频得到帧&lt;/p&gt;
+&lt;pre&gt;
+-(BOOL)stepFrame {
+	// AVPacket packet;
+    int frameFinished=0;
+
+    while(!frameFinished &amp;amp;&amp;amp; av_read_frame(pFormatCtx, &amp;amp;packet)&amp;gt;=0) {
+        // Is this a packet from the video stream?
+        if(packet.stream_index==videoStream) {
+            // Decode video frame
+            avcodec_decode_video2(pCodecCtx, pFrame, &amp;amp;frameFinished, &amp;amp;packet);
+        }
+		
+	}
+	return frameFinished!=0;
+}
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;currentimage方法&quot;&gt;currentImage方法&lt;/h6&gt;
+
+&lt;p&gt;获取当前的UIImage对象，以呈现当前播放的画面&lt;/p&gt;
+&lt;pre&gt;
+-(UIImage *)currentImage {
+	if (!pFrame-&amp;gt;data[0]) return nil;
+	[self convertFrameToRGB];
+	return [self imageFromAVPicture:picture width:outputWidth height:outputHeight];
+}
+
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;convertframetorgb&quot;&gt;convertFrameToRGB&lt;/h6&gt;
+
+&lt;p&gt;转换音视频帧到RGB&lt;/p&gt;
+&lt;pre&gt;
+-(void)convertFrameToRGB {	
+	sws_scale (img_convert_ctx, pFrame-&amp;gt;data, pFrame-&amp;gt;linesize,
+			   0, pCodecCtx-&amp;gt;height,
+			   picture.data, picture.linesize);	
+}
+
+&lt;/pre&gt;
+
+&lt;h6 id=&quot;uiimage-imagefromavpictureavpicturepict-widthintwidth-heightintheight方法&quot;&gt;(UIImage *)imageFromAVPicture:(AVPicture)pict width:(int)width height:(int)height方法&lt;/h6&gt;
+
+&lt;p&gt;把AVPicture转换成UIImage把音视频画面显示出来&lt;/p&gt;
+&lt;pre&gt;
+-(UIImage *)imageFromAVPicture:(AVPicture)pict width:(int)width height:(int)height {
+	CGBitmapInfo bitmapInfo = kCGBitmapByteOrderDefault;
+	CFDataRef data = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, pict.data[0], pict.linesize[0]*height,kCFAllocatorNull);
+	CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+	CGImageRef cgImage = CGImageCreate(width, 
+									   height, 
+									   8, 
+									   24, 
+									   pict.linesize[0], 
+									   colorSpace, 
+									   bitmapInfo, 
+									   provider, 
+									   NULL, 
+									   NO, 
+									   kCGRenderingIntentDefault);
+	CGColorSpaceRelease(colorSpace);
+	UIImage *image = [UIImage imageWithCGImage:cgImage];
+	CGImageRelease(cgImage);
+	CGDataProviderRelease(provider);
+	CFRelease(data);
+	
+	return image;
+}
+&lt;/pre&gt;
+
+&lt;h2 id=&quot;reference&quot;&gt;Reference&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://cnbin.github.io/blog/2015/05/19/iospei-zhi-ffmpegkuang-jia/&quot;&gt;iOS配置FFmpeg框架&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://zh.wikipedia.org/wiki/FFmpeg&quot;&gt;FFmpeg-wikipedia&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.vitamio.org/docs/Basic/2013/0508/14.html&quot;&gt;Vitamio测试网络视频地址&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://blog.csdn.net/leixiaohua1020/article/details/14214577&quot;&gt; FFMPEG结构体分析-系列文章&lt;/a&gt;:包括AVFrame、AVFormatContext、AVCodecContext、AVIOContext、AVCodec、AVStream、AVPacket&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://blog.csdn.net/column/details/ffmpeg-devel.html&quot;&gt;FFmpeg开发和使用有关的文章的汇总&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.ffmpeg.org/&quot;&gt;ffmpeg 官网&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/FFmpeg/FFmpeg&quot;&gt;FFmpeg GitHub source code&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;作者 ：&lt;a href=&quot;https://github.com/coderyi/blog&quot;&gt;coderyi&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;转载请加原文链接:&lt;a href=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0826_ffmpeg_iOS_iframeextractor.md&quot;&gt;https://github.com/coderyi/blog/blob/master/articles/2015/0826_ffmpeg_iOS_iframeextractor.md&lt;/a&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 26 Aug 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/ffmpeg_iOS_iframeextractor/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/ffmpeg_iOS_iframeextractor/</guid>
+        
+        <category>音视频</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>大圣归来一些感想</title>
+        <description>&lt;p&gt;这是一部视觉和内容上很好的动画片，《西游记之大圣归来》加上《秦时明月》是目前我认为国产动画中的很好的两个。今天在电影院看到它的时候很激动，很久没有看到这么好的电影。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://img31.mtime.cn/pi/2015/04/22/112758.49985889_1000X1000.jpg&quot; width=&quot;500&quot; height=&quot;281&quot; alt=&quot;图片&quot; align=&quot;center&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;为什么是西游&quot;&gt;为什么是西游&lt;/h3&gt;
+
+&lt;p&gt;中国动画我觉得一直很平庸，西游是中国的经典故事，并且西游在很长一段时间伴随很多人的童年。&lt;/p&gt;
+
+&lt;p&gt;“猴哥猴哥 你真了不得”，猴哥就是我们童年的英雄，紧箍咒再念没改变老孙的本色,拔一根毫毛吹出猴万个，眨一眨眼皮能把鬼识破， 翻个跟斗十万八千里，抖一抖威风山崩地也裂。&lt;/p&gt;
+
+&lt;p&gt;“悄悄问圣僧，女儿美不美，女儿美不美”，爱情面前，理想也曾有那么一丝动摇。&lt;/p&gt;
+
+&lt;p&gt;也伴随着少男少女们的青春，“曾经有一份真挚的爱情摆在我面前”，征途面对世俗的无奈。&lt;/p&gt;
+
+&lt;p&gt;国产动画在西游上找突破点是良性的。要想成为经典，首先突破经典，很多人在西游题材上，惧怕《西游记》这部伟大的小说，在故事情节、内容上不敢有大动作。所以如果在西游上突破，可能会是一部好的片子，就像之前的《大话西游》。&lt;/p&gt;
+
+&lt;h3 id=&quot;英雄&quot;&gt;英雄&lt;/h3&gt;
+
+&lt;p&gt;《大圣归来》是一个英雄主题，不是美国的超级英雄，而是一个人的自我突破。一个人在救了别人的同时必定自我也实现了突破，可以我说自我完整也就驾驭了整个世界。&lt;/p&gt;
+
+&lt;p&gt;《大圣归来》中有两次突破自我的高潮，一次是小姑娘被妖王混沌抓走，悟空沉入水中萎靡不振。溺水的过程是美妙的，落入水中，看见金色的天空，柔和的阳光，波光粼粼的水面，充满了美好的事物。悟空在这个时候回顾了江流儿对他的鼓励，于是鼓起了勇气开始了新的征程。&lt;/p&gt;
+
+&lt;p&gt;第二次自我突破，在《大圣归来》中是真正地自我突破，伴随而来也就突破外面世界的束缚，佛祖给它的封印不过是束缚的假象。当江流儿死了，情感的爆发激起了他的自我实现。这是一个很好的东西，但是我觉得不足之处在于，没有足够深化江流儿与悟空的关系，爱情、父子、伯牙子期、师徒、大爱。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://mag.moe/wp-content/uploads/2015/06/%E3%80%8A%E8%A5%BF%E6%B8%B8%E8%AE%B0%E4%B9%8B%E5%A4%A7%E5%9C%A3%E5%BD%92%E6%9D%A5%E3%80%8B%E8%BF%98%E6%9C%AA%E4%B8%8A%E6%98%A0%E5%A5%BD%E8%AF%84%E5%A6%82%E6%BD%AE-520x400.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;突破&quot;&gt;突破&lt;/h3&gt;
+
+&lt;p&gt;首先电影的特效不错，在一定程度上还是秒杀了国内所谓的3D片。其实另外一个的话就是在西游的内容上有一定的突破。
+我觉得妖王的角色塑造地比较成功，脸应该是借鉴了京剧的脸谱，另外可能有点像《千与千寻》中无脸男，我觉得《大圣归来》可能受到了宫崎骏的影响，不过我觉得《大圣归来》在模仿上是成功的。妖王在电影中有三个造型是不错的，一个是书生造型，一个散发之后，另外一个是现出原形后大肉虫的造型。&lt;/p&gt;
+
+&lt;p&gt;小白龙，龙的形象是比较不错的，很多影视剧里面龙的形象感觉都很粗糙。在白龙飞的时候表现出了一定的意境，让人的心也跟着飞起来，唯一一个让我吐槽的是，怎么会有汪峰的歌，一下子拉低《大圣归来》的档次，另外有一点像《千与千寻》中白龙。&lt;/p&gt;
+
+&lt;p&gt;片中对《西游记》故事情节的改编还是比较成功的，另外它有几个长镜头做得很不错。&lt;/p&gt;
+
+&lt;p&gt;最后说说悟空这个角色，造型好，性格设置不一样，五行山出场有特色，但是还是不够大胆，没有表现出该有的人性，并且有一些受制于小说《西游记》。&lt;/p&gt;
+
+&lt;p&gt;###《机器人总动员》的遐想，如果没有对白，没有声音&lt;/p&gt;
+
+&lt;p&gt;《机器人总动员》中对白是很少的，这让我印象深刻，回荡在我耳边的一直是那句简单的“EWA，EWA，EWA……”。&lt;/p&gt;
+
+&lt;h3 id=&quot;悲剧是艺术的高级形式甚至是巅峰&quot;&gt;悲剧是艺术的高级形式甚至是巅峰&lt;/h3&gt;
+
+&lt;p&gt;尼采曾经说过：“悲剧历来被看做是艺术的高级形式乃至巅峰”，悲剧不一定是所谓的悲剧性的结尾。《机器人总动员》在我心中是动画片中的冠军。它的悲的地方我可能觉得有两个，一个地球的荒凉，它在人类的生存环境上刻画地发人深思。另外一个，在结尾处，EWA在挽救WALLE的那一段扣人心弦。&lt;/p&gt;
+
+&lt;p&gt;《大话西游》在结局上紫霞仙子和至尊宝也分开，至尊宝踏上了西天取经的道路。西游的故事中，大闹天宫是最精彩的一段，其实后面的取经八十一难是很不愿意看，但正是违背了悟空这个角色的设定，才让人回味无穷。&lt;/p&gt;
+
+&lt;p&gt;最后，我觉得《西游记之大圣归来》真的是一部非常不错的动画电影，值得去看。&lt;/p&gt;
+
+&lt;p&gt;预告片地址：&lt;a href=&quot;http://movie.douban.com/trailer/179848/#content&quot;&gt;《西游记之大圣归来》&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;文章未经授权不能有商业用途，转载请付原文链接：https://github.com/coderyi/blog/blob/master/articles/2015/0713_MonkeyKing.md&lt;/p&gt;
+</description>
+        <pubDate>Mon, 13 Jul 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/MonkeyKing/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/MonkeyKing/</guid>
+        
+        
+        <category>life</category>
+        
+      </item>
+    
+      <item>
+        <title>WWDC 2015－Swift开源,支持 iOS,OS X ,Linux</title>
+        <description>&lt;p&gt;2015-06-09&lt;/p&gt;
+
+&lt;p&gt;OS X、iOS 和 watchOS&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;OS X El Capitan&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;OS X El Capitan 为新发布的Mac系统，Craig 介绍了OS X El Capitan 的 Spotlight、Split View、窗口管理等众多新功能。OS X El Capitan的El是小写L，不是大写i，也不是1。查了维基发现，El Capitan是Yosemite国家公园里面的一座山，具体看&lt;a href=&quot;http://en.wikipedia.org/wiki/El_Capitan&quot; title=&quot;El_Capitan wiki&quot;&gt;El_Capitan wiki&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;Metal&lt;/p&gt;
+
+&lt;p&gt;Metal 是一种核心图像处理技术，让各种 App 都能更快捷地访问图形处理器。这将为整个系统带来更快更高效的图像渲染性能。&lt;/p&gt;
+
+&lt;p&gt;Mac 上的 Metal 技术提升了游戏类和很多App 的图像逼真度及细节表现力。iOS 9 配备的各种内置 App 也充分利用了 Metal 技术的优势，将呈现更灵敏的页面滚动、更生动流畅的动画及更出色的总体性能表现。&lt;/p&gt;
+
+&lt;p&gt;更优化的使用体验、更快的性能表现：这就是 OS X El Capitan。&lt;/p&gt;
+
+&lt;p&gt;面向开发人员的 beta 版 OS X El Capitan 于今天推出，而面向公众的 beta 版将于今夏推出。正式版OS X El Capitan 将于今秋正式推出，让全球用户都可免费使用。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;iOS 9&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;iOS 9 让整个系统变得更为智能；它优化了你常用的各种 App，与 iPad 的整合也将更为完善。&lt;/p&gt;
+
+&lt;p&gt;iOS 9 推出主动助理 (Proactive Assistant) 功能，并且公布了相关的API。
+接下来Jennifer Bailey聊了聊 Apple Pay的事情，一个是Apple Pay 7 月起将登陆英国；另一个，Apple Pay 让 Passbook App 的内容变得更为丰富，因此 Passbook 也有了一个新名字：Wallet。&lt;/p&gt;
+
+&lt;p&gt;iOS 9 的备忘录 App 经过了重新设计，功能变得更为强大。你可以从备忘录里直接启用相机来添加照片或者直接动动手指来画张草图。简单说，notes 进化成 evernote 了。&lt;/p&gt;
+
+&lt;p&gt;iOS 9 带来了一个全新的 App， News App。News App 将你所关注的新闻，都送到了你的手边。新闻聚合 App 的强劲对手来了……&lt;/p&gt;
+
+&lt;p&gt;Craig Federighi 讲解了 iPad 上的 iOS 9 上的一些新东西。&lt;/p&gt;
+
+&lt;p&gt;iOS 9 带来了全新的多任务处理功能和工具，让你能开开心心地一心多用。Slide Over 功能让你在不离开当前 App 的同时就能打开第二个 App。有了 Split View 功能，两个 App 能在同一屏幕上，同时开启、并行运作。Picture in Picture 功能可以缩小视频的尺寸，让你在回邮件的同时还能看视频节目。&lt;/p&gt;
+
+&lt;p&gt;Picture in Picture、Slide Over 和 Split View 功能，都将对开发人员开放 API，iOS 9 将为开发人员提供众多全新的 API。&lt;/p&gt;
+
+&lt;p&gt;App Store 现在有超过 15,000 个 App 是用 Swift 来开发的。Swift 不仅提高了性能，还拥有各种全新功能，来帮你提高效率。Swift 是 iOS 和 OS X 的底层开发语言，它为编写各种精彩 APP 带来了无限可能。&lt;/p&gt;
+
+&lt;p&gt;下面是Swift爆出了WWDC 2015最大的新闻，在今年晚些时候，Swift 会开放源代码，对 iOS、OS X 和 Linux 都适用。&lt;/p&gt;
+
+&lt;p&gt;在TIOBE 2015年6月编程语言排行榜中，Objective-C是4.339%，第5名，Swift是1.440%,第14名。在过去一年中，Objective-C下降了6.6%，Swift上升了1.44%，按照这种趋势，再加上open source这个大新闻，感觉今年Swift就得超过Objective-C了，看来我得转战Swift了，哈哈！&lt;/p&gt;
+
+&lt;p&gt;面向开发人员的 beta 版 iOS 9 于今天推出，面向公众的 beta 版将于 7 月推出。iOS 9 将于今秋正式推出。&lt;/p&gt;
+
+&lt;p&gt;iOS 升级包只有 1.3G，这样 16GB 版本的设备也能轻松升级了，并且我得说4S很坚强，很能升级。&lt;/p&gt;
+
+&lt;p&gt;很难想象，App Store 推出才仅仅 7 年。App Store 已累计让开发人员收获超过 300 亿美金。所有 App 的下载量已经超过了 100,000,000,000 次！&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;watchOS 2&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在此之前，Apple Watch 上许多的 app 需要借助 iPhone 来运行；而有了 watchOS 2，它们就能完全在 Apple Watch 上运行了。&lt;/p&gt;
+
+&lt;p&gt;Kevin介绍了新版 WatchKit ，开发人员将能利用 WatchKit，访问更多硬件功能。包括麦克风及扬声器、视频、加速感应器、Taptic Engine，和 Digital Crown 等。&lt;/p&gt;
+
+&lt;p&gt;凭借 HomeKit，你将能靠 Apple Watch 上的一些 app 来直接控制电灯等家居设备。&lt;/p&gt;
+
+&lt;p&gt;面向开发人员的 watchOS 2 预览于今日推出。watchOS 2 将于今秋推出，作为免费的软件更新，并兼容每一只 Apple Watch。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;Apple Music&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jimmy Iovine 来到了台上，这家伙一上台很多人都以为是微软CEO Satya Nadella，只能说长得太像了！&lt;/p&gt;
+
+&lt;p&gt;不得不吐槽，WWDC搞个这个是干啥，并且做到最后还是做了个网易云音乐！&lt;/p&gt;
+
+&lt;p&gt;总之，这次大会Swift开源是一件大事，当看到Open Source时，我都快哭了，哈哈！另外，今天开始开发者账号可以跨越iOS、OS X和watch OS，赶快买吧！&lt;/p&gt;
+
+&lt;p&gt;本文原文链接：&lt;a href=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&quot; title=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&quot;&gt;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;扩展链接：&lt;/p&gt;
+
+&lt;p&gt;WWDC 2015 图文直播： &lt;a href=&quot;http://www.apple.com/cn/live/2015-june-event/&quot; title=&quot;http://www.apple.com/cn/live/2015-june-event/&quot;&gt;http://www.apple.com/cn/live/2015-june-event/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Apple Beta 版软件计划 ： &lt;a href=&quot;https://beta.apple.com/sp/zh/betaprogram/&quot; title=&quot;https://beta.apple.com/sp/zh/betaprogram/&quot;&gt;https://beta.apple.com/sp/zh/betaprogram/&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Tue, 09 Jun 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/WWDC2015/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/WWDC2015/</guid>
+        
+        <category>WWDC</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+  </channel>
+</rss>

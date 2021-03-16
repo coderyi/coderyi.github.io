@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Objective-C代码注入－拦截NSURLConnection的消息</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/objective-c_inject_code/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/objective-c_inject_code/">Objective-C代码注入－拦截NSURLConnection的消息</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>2015.11.11</p>
+
+<h5 id="混淆一个方法">混淆一个方法</h5>
+
+<pre>
+    Class class = objc_getMetaClass(class_getName([NSURLConnection class]));
+    SEL originalSelector = @selector(sendAsynchronousRequest:queue:completionHandler:);
+    SEL swizzledSelector =NSSelectorFromString([NSString stringWithFormat:@"_coderyi_swizzle_%x_%@", arc4random(), NSStringFromSelector(selector)]);
+</pre>
+<p>其实在ObjC中class有两种，一个是对象，一个是类，[NSURLConnection class]或者objc_getClass获取到的是objc_object，而objc_getMetaClass获取到的是objc_class，这里因为sendAsynchronousRequest:queue:completionHandler:是类方法，所有需要使用objc_getMetaClass。objc_class可以通过objc_object的isa.cls获得。</p>
+
+<h5 id="消息和方法的动态绑定">消息和方法的动态绑定</h5>
+
+<pre>
+        typedef void (^NSURLConnectionAsyncCompletion)(NSURLResponse* response, NSData* data, NSError* connectionError);
+        
+        void (^asyncSwizzleBlock)(Class, NSURLRequest *, NSOperationQueue *, NSURLConnectionAsyncCompletion) = ^(Class slf, NSURLRequest *request, NSOperationQueue *queue, NSURLConnectionAsyncCompletion completion) {
+                NSLog(@"i get the request url:  %@",request.URL);
+ 
+                ((void(*)(id, SEL, id, id, id))objc_msgSend)(slf, swizzledSelector, request, queue, completion);
+
+        };
+        
+        
+    Method originalMethod = class_getInstanceMethod(class, originalSelector);
+    if (!originalMethod) {
+        return;
+    }
+    
+    IMP implementation = imp_implementationWithBlock(asyncSwizzleBlock);
+    class_addMethod(class, swizzledSelector, implementation, method_getTypeEncoding(originalMethod));
+    Method newMethod = class_getInstanceMethod(class, swizzledSelector);
+    method_exchangeImplementations(originalMethod, newMethod);
+</pre>
+
+<p>这里主要是把自己的消息增加到NSURLConnection类中，并且这条消息会经过asyncSwizzleBlock,block会实现这个方法，这样就能够拦截sendAsynchronousRequest:queue:completionHandler:消息的内容，包括请求的URL等。</p>
+
+<p>imp_implementationWithBlock的作用是方法被调用的时候，创建一个函数指针，这样就会调用这个block了，在block里面你可以知道这个消息的细节，并且你必须需要自己发送这个消息，你可以通过objc_msgSend函数完成。</p>
+
+<p>objc_msgSend的函数具体是这样的，你需要把方法的返回值，以及每一个参数加上。</p>
+<pre>
+id objc_msgSend(id self, SEL op, arg1, arg2, ...)
+</pre>
+
+<p>关于swizzledSelector你首先需要通过class_addMethod加入到class的方法里面，然后再把刚刚加入的混淆方法，替换掉旧的方法，你可以通过method_exchangeImplementations函数实现。</p>
+
+<p>注意class_addMethod将会覆盖父类的方法，但不会取代本类的方法，如果需要取代本类，可以用method_setImplementation等函数实现，这里就用method_exchangeImplementations。</p>
+
+<h5 id="获取哪些类实现了delegate">获取哪些类实现了delegate</h5>
+
+<pre>
+        const SEL selectors[] = {
+            @selector(connection:willSendRequest:redirectResponse:),
+            @selector(connection:didReceiveResponse:),
+        };
+        
+        const int numSelectors = sizeof(selectors) / sizeof(SEL);
+        
+        Class *classes = NULL;
+        int numClasses = objc_getClassList(NULL, 0);
+        
+        if (numClasses &gt; 0) {
+            classes = (__unsafe_unretained Class *)malloc(sizeof(Class) * numClasses);
+            numClasses = objc_getClassList(classes, numClasses);//获取项目中所有的类
+            for (NSInteger classIndex = 0; classIndex &lt; numClasses; ++classIndex) {
+                Class class = classes[classIndex];
+                
+                if (class == [NetworkObserver class]) {
+                    continue;
+                }
+                
+                unsigned int methodCount = 0;
+                Method *methods = class_copyMethodList(class, &amp;methodCount);
+                BOOL matchingSelectorFound = NO;
+                for (unsigned int methodIndex = 0; methodIndex &lt; methodCount; methodIndex++) {
+                    for (int selectorIndex = 0; selectorIndex &lt; numSelectors; ++selectorIndex) {
+                        if (method_getName(methods[methodIndex]) == selectors[selectorIndex]) {
+                            [self injectWillSendRequestIntoDelegateClass:class];
+                            [self injectDidReceiveResponseIntoDelegateClass:class];
+                            matchingSelectorFound = YES;
+                            break;
+                        }
+                    }
+                    if (matchingSelectorFound) {
+                        break;
+                    }
+                }
+                free(methods);
+            }
+            
+            free(classes);
+        }
+</pre>
+
+<p>这里的作用是扫描项目中有哪些类实现了NSURLConnectionDataDelegate的connection:willSendRequest:redirectResponse:和connection:didReceiveResponse:方法，objc_getClassList函数就是获取项目中所有的类，扫描每一个类，当得到一个类之后你可以通过class_copyMethodList函数获取到所有的方法，然后你就可以对相应的类注入自己的方法了。</p>
+
+<h5 id="动态绑定delegate的消息">动态绑定delegate的消息</h5>
+
+<div class="language-objectivec highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">SEL</span> <span class="n">selector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">connection</span><span class="o">:</span><span class="n">willSendRequest</span><span class="o">:</span><span class="n">redirectResponse</span><span class="o">:</span><span class="p">);</span>
+    <span class="n">SEL</span> <span class="n">swizzledSelector</span> <span class="o">=</span> <span class="p">[</span><span class="n">SwizzleUtility</span> <span class="nf">swizzledSelectorForSelector</span><span class="p">:</span><span class="n">selector</span><span class="p">];</span>
+    
+    <span class="n">Protocol</span> <span class="o">*</span><span class="n">protocol</span> <span class="o">=</span> <span class="k">@protocol</span><span class="err">(</span><span class="nc">NSURLConnectionDataDelegate</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">protocol</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="k">@protocol</span><span class="err">(</span><span class="nc">NSURLConnectionDelegate</span><span class="p">);</span>
+    <span class="p">}</span>
+    
+    <span class="k">struct</span> <span class="n">objc_method_description</span> <span class="n">methodDescription</span> <span class="o">=</span> <span class="n">protocol_getMethodDescription</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="nb">NO</span><span class="p">,</span> <span class="nb">YES</span><span class="p">);</span>
+    
+    <span class="k">typedef</span> <span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">(</span><span class="o">^</span><span class="n">NSURLConnectionWillSendRequestBlock</span><span class="p">)(</span><span class="n">id</span> <span class="o">&lt;</span><span class="n">NSURLConnectionDelegate</span><span class="o">&gt;</span> <span class="n">slf</span><span class="p">,</span> <span class="n">NSURLConnection</span> <span class="o">*</span><span class="n">connection</span><span class="p">,</span> <span class="n">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="n">NSURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">);</span>
+    
+    <span class="n">NSURLConnectionWillSendRequestBlock</span> <span class="n">undefinedBlock</span> <span class="o">=</span> <span class="o">^</span><span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">(</span><span class="n">id</span> <span class="o">&lt;</span><span class="n">NSURLConnectionDelegate</span><span class="o">&gt;</span> <span class="n">slf</span><span class="p">,</span> <span class="n">NSURLConnection</span> <span class="o">*</span><span class="n">connection</span><span class="p">,</span> <span class="n">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="n">NSURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">[[</span><span class="n">NetworkObserver</span> <span class="nf">sharedObserver</span><span class="p">]</span> <span class="nf">connection</span><span class="p">:</span><span class="n">connection</span> <span class="nf">willSendRequest</span><span class="p">:</span><span class="n">request</span> <span class="n">redirectResponse</span><span class="o">:</span><span class="n">response</span> <span class="n">delegate</span><span class="o">:</span><span class="n">slf</span><span class="p">];</span>
+        
+        <span class="k">return</span> <span class="n">request</span><span class="p">;</span>
+    <span class="p">};</span>
+    
+    <span class="n">NSURLConnectionWillSendRequestBlock</span> <span class="n">implementationBlock</span> <span class="o">=</span> <span class="o">^</span><span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">(</span><span class="n">id</span> <span class="o">&lt;</span><span class="n">NSURLConnectionDelegate</span><span class="o">&gt;</span> <span class="n">slf</span><span class="p">,</span> <span class="n">NSURLConnection</span> <span class="o">*</span><span class="n">connection</span><span class="p">,</span> <span class="n">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="n">NSURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">__block</span> <span class="n">NSURLRequest</span> <span class="o">*</span><span class="n">returnValue</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+        <span class="n">undefinedBlock</span><span class="p">(</span><span class="n">slf</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">);</span>
+        <span class="n">returnValue</span> <span class="o">=</span> <span class="p">((</span><span class="n">id</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="n">id</span><span class="p">,</span> <span class="n">SEL</span><span class="p">,</span> <span class="n">id</span><span class="p">,</span> <span class="n">id</span><span class="p">,</span> <span class="n">id</span><span class="p">))</span><span class="n">objc_msgSend</span><span class="p">)(</span><span class="n">slf</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">);</span>
+
+
+        <span class="k">return</span> <span class="n">returnValue</span><span class="p">;</span>
+    <span class="p">};</span>
+
+	<span class="n">IMP</span> <span class="n">implementation</span> <span class="o">=</span> <span class="n">imp_implementationWithBlock</span><span class="p">((</span><span class="n">id</span><span class="p">)([</span><span class="n">cls</span> <span class="nf">instancesRespondToSelector</span><span class="p">:</span><span class="n">selector</span><span class="p">]</span> <span class="p">?</span> <span class="n">implementationBlock</span> <span class="p">:</span> <span class="n">undefinedBlock</span><span class="p">));</span>
+    
+    <span class="n">Method</span> <span class="n">oldMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">selector</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">oldMethod</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">class_addMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">,</span> <span class="n">implementation</span><span class="p">,</span> <span class="n">methodDescription</span><span class="p">.</span><span class="n">types</span><span class="p">);</span>
+        
+        <span class="n">Method</span> <span class="n">newMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">);</span>
+        
+        <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">oldMethod</span><span class="p">,</span> <span class="n">newMethod</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">class_addMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="n">implementation</span><span class="p">,</span> <span class="n">methodDescription</span><span class="p">.</span><span class="n">types</span><span class="p">);</span>
+    <span class="p">}</span>
+
+</code></pre></div></div>
+
+<p>因为class_addMethod时候需要关于方法的描述，所以需要NSURLConnectionDataDelegate中connection:willSendRequest:redirectResponse:的方法描述，可以通过函数protocol_getMethodDescription获得，关方法的实现block需要判断类(这里是ViewController实现了delegate)是否实现该方法，如果没有实现则到此为止，如果有实现connection:willSendRequest:redirectResponse:方法则需要在拦截到消息之后再把消息发送出去。</p>
+
+<p>以上代码，来自我写的一个Demo,<a href="https://github.com/coderyi/iOSDemos/tree/master/ObjCInjectCodeDemo">ObjCInjectCodeDemo</a></p>
+
+<p>我演示的是拦截网络请求，当然你如果需要这方面的功能，可以看看我写的网路调试库,<a href="https://github.com/coderyi/NetworkEye">NetworkEye</a>，NetworkEye用的是NSURLProtocol，并不是这个。</p>
+
+<h4 id="参考链接">参考链接</h4>
+
+<p><a href="https://developer.apple.com/library/mac/documentation/Cocoa/Reference/ObjCRuntimeRef/">Apple Objective-C Runtime Reference</a></p>
+
+<p><a href="https://opensource.apple.com/tarballs/objc4/">apple runtime source code</a></p>
+
+<p><a href="https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Introduction/Introduction.html">Objective-C Runtime Programming Guide</a></p>
+
+<p><a href="http://wenku.baidu.com/view/1e06c9a20029bd64783e2cd1.htm">Objective-C Runtime Programming Guide 中文</a></p>
+
+<p><a href="http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/">Objective-C Runtime 运行时之一：类与对象</a></p>
+
+<p>转载请附本文链接<a href="https://github.com/coderyi/blog/blob/master/articles/2015/1111_objective-c_inject_code.md">https://github.com/coderyi/blog/blob/master/articles/2015/1111_objective-c_inject_code.md</a></p>
+
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2015-11-11
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#Objective-C-ref" >Objective-c</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

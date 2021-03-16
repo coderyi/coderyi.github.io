@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Weex学习与实践(二):iOS集成的tips</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/weex2/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/weex2/">Weex学习与实践(二):iOS集成的tips</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p><a href="http://coderyi.com/posts/weex1/">Weex学习与实践(一):Weex,你需要知道的事</a></p>
+
+<p><a href="http://coderyi.com/posts/weex2/">Weex学习与实践(二):iOS集成的tips</a></p>
+
+<p><a href="http://coderyi.com/posts/weex3/">Weex学习与实践(三):iOS原理篇</a></p>
+
+<p>本文主要介绍包括iOS上集成Weex、iOS上扩展组件、iOS上扩展module</p>
+
+<h3 id="ios上集成weex">iOS上集成Weex</h3>
+
+<p>集成weex，需要WeexSDK、WXDevtool两个库以及阿里未开源的ATSDK-Weex。</p>
+
+<p>目前官方的alibaba/Weex仓库里面</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    pod 'WeexSDK', :path=&gt;'../sdk/'
+    pod 'WXDevtool', :path=&gt;'../WXDevtool/'
+    pod 'ATSDK-Weex', '0.0.1'
+</code></pre></div></div>
+
+<p>它们直接使用的weex仓库的sdk,但是weex主仓库的WXDevtool已经不维护了，需要替换成，<a href="https://github.com/weexteam/weex-devtool-iOS">weexteam/weex-devtool-iOS</a>的代码。</p>
+
+<p>另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framwork,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。</p>
+
+<p>当然你也可以不用通过cocoapods集成，直接把代码拉进工程就可以，如果发生</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Unknown type name 'NSString'
+</code></pre></div></div>
+
+<p>你可能需要把layout.c文件右侧的type改为Objective-C Source，或者直接修改为layout.m。</p>
+
+<p>基本上JS页面是在WXDemoViewController工作的，你可能需要接收页面刷新的通知，以支持实时刷新</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@"RefreshInstance" object:nil];
+</code></pre></div></div>
+
+<p>页面会维护一个WXSDKInstance实例，WXSDKInstance就是weex渲染的实例对象，提供了很多页面渲染相关的接口，比如renderWithURL、refreshInstance、destroyInstance等</p>
+
+<p><a href="https://github.com/weexteam/article/issues/18">weex SDK 集成到工程 (integrate to ios) </a></p>
+
+<p><a href="https://open.taobao.com/doc2/detail?spm=a219a.7629140.0.0.tFddsV&amp;&amp;docType=1&amp;articleId=104829">Weex iOS SDK 集成指南</a></p>
+
+<h3 id="ios上扩展组件">iOS上扩展组件</h3>
+
+<p>目前官方iOS这一块组件的代码在WeexSDK的component里面，组件有限，只有image，list，scroller等，如果想要实现自己的组件，首先需要继承WXComponent类。</p>
+
+<p>然后实现方法</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
+{}
+</code></pre></div></div>
+
+<p>注意这个方法不在主线程，这里面接收一些js传过来的参数，以在js端写的image标记为例子</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;image style="width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220" src=&gt;&lt;/image&gt;
+
+</code></pre></div></div>
+
+<p>到objc端就是</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ref:701
+type:image
+styles:
+{
+    height = 100;
+    marginLeft = 220;
+    marginRight = 20;
+    marginTop = 20;
+    width = 100;
+}
+attributes:
+{
+    src = "https://avatars.githubusercontent.com/u/9892522?v=3";
+}
+</code></pre></div></div>
+
+<p>ref（结点的唯一标识符）</p>
+
+<p>然后在loadView的时候可能需要返回自己的objc组件</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (UIView *)loadView
+{
+    return [[WXImageView alloc] init];
+}
+
+</code></pre></div></div>
+
+<p>然后你可以通过复写addEvent方法来增加一个change（UIControlEventValueChanged）、click（UIControlEventTouchUpInside）等事件</p>
+
+<p>如果是image组件的话，你可能需要接收图片地址，这个时候需要通过实现了WXImgLoaderProtocol的WXImgLoaderDefaultImpl来处理，WXImgLoaderDefaultImpl实现了downloadImageWithURL方法，这里面通过SDWebImage来下载一张图片。</p>
+
+<p><a href="https://github.com/weexteam/article/issues/17">iOS 扩展 (extend to ios)</a></p>
+
+<h3 id="ios上扩展module">iOS上扩展module</h3>
+
+<p>这一块的代码在module分组里面，包括网络库stream，持久化storage等，你可以扩展自己module。</p>
+
+<p>需要做的是实现WXModuleProtocol协议，并且写自己的方法就可以了，这里需要通过weex的宏把需要public的方法导出</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
+
+</code></pre></div></div>
+
+<p>在module中目前是没有view的，但是你可以通过由js传过来的ref值拿到</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
+    CALayer *layer = targetComponent.layer;
+    UIView *view = targetComponent.view;
+</code></pre></div></div>
+
+<h3 id="注意点">注意点</h3>
+
+<p>1.如果设置js文件在bundle中载入的话，需要把build的js文件拖入工程，如果的你的we里面一开始就调用了js文件，由于只会buildwe文件，所以还需要把之前的js文件拖入工程，另外examples里面判断iOSAssets是这样的</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      var isiOSAssets = bundleUrl.indexOf('file:///') &gt;= 0 &amp;&amp; bundleUrl.indexOf('WeexDemo.app') &gt; 0;
+
+</code></pre></div></div>
+
+<p>你如果拖入自己的工程需要把WeexDemo.app的判断去掉</p>
+
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2016-10-17
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#Weex-ref" >Weex</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

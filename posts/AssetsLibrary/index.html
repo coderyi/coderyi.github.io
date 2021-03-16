@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>iOS的AssetsLibrary框架访问所有相片</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/AssetsLibrary/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/AssetsLibrary/">iOS的AssetsLibrary框架访问所有相片</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>2014-10-16</p>
+
+<p>该框架下有几个类，ALAssetsLibrary，ALAssetsGroup，ALAsset，ALAssetsFilter，ALAssetRepresentation。</p>
+
+<p>ALAssetsLibrary类</p>
+
+<p>ALAssetsLibrary类可以实现查看相册列表，增加相册，保存图片到相册等功能。</p>
+
+<p>例如enumerateGroupsWithTypes方法列举所有相册。</p>
+
+<p>ALAssetsGroup</p>
+
+<p>ALAssetsGroup就是相册的类，可以通过valueForProperty方法查看不同属性的值，如：ALAssetsGroupPropertyName，相册名。</p>
+
+<p>ALAssetsGroup类有几个方法，posterImage方法就是相册的封面图片，numberOfAssets方法获取该相册的图片视频数量，可以通过enumerateAssetsUsingBlock方法列举出所有照片。</p>
+
+<p>ALAssetsGroup 可以使用setAssetsFilter:(ALAssetsFilter *)filter过滤照片或者视频等。</p>
+
+<p>首先是获取所有相册，通过ALAssetsLibrary的实例方法得到ALAssetsGroup类数组。</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">
+    ALAssetsLibrary *assetsLibrary;
+    NSMutableArray *groupArray;
+    assetsLibrary = [[ALAssetsLibrary alloc] init];
+    groupArray=[[NSMutableArray alloc] initWithCapacity:1];
+    [assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
+        if (group) {
+            [groupArray addObject:group];
+
+            //            通过这个可以知道相册的名字，从而也可以知道安装的部分应用
+            //例如 Name:柚子相机, Type:Album, Assets count:1
+            NSLog(@"%@",group);
+        }
+    } failureBlock:^(NSError *error) {
+        NSLog(@"Group not found!\n");
+    }];</pre>
+<p>ALAsset类</p>
+
+<p>ALAsset类也可以通过valueForProperty方法查看不同属性的值，如：ALAssetPropertyType，asset的类型，有三种ALAssetTypePhoto, ALAssetTypeVideo or ALAssetTypeUnknown。</p>
+
+<p>另外还可以通过该方法获取ALAssetPropertyLocation（照片位置），ALAssetPropertyDuration（视频时间），ALAssetPropertyDate（照片拍摄日期）等。</p>
+
+<p>可以通过thumbnail方法就是获取该照片。</p>
+
+<p>根据相册获取该相册下所有图片，通过ALAssetsGroup的实例方法得到ALAsset类数组。</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;"> [_group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
+        if (result) {
+            [imageArray addObject:result];
+            NSLog(@"%@",result);
+            iv.image=[UIImage imageWithCGImage: result.thumbnail];
+            NSString *type=[result valueForProperty:ALAssetPropertyType];
+        }
+    }];</pre>
+<p>ALAssetRepresentation类</p>
+
+<p>ALAsset类有一个defaultRepresentation方法，返回值是ALAssetRepresentation类，该类的作用就是获取该资源图片的详细资源信息。</p>
+
+<p>如</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">//
+//获取资源图片的详细资源信息
+ALAssetRepresentation* representation = [asset defaultRepresentation];
+//获取资源图片的长宽
+CGSize dimension = [representation dimensions];
+ //获取资源图片的高清图
+[representation fullResolutionImage];
+//获取资源图片的全屏图
+[representation fullScreenImage];
+//获取资源图片的名字
+NSString* filename = [representation filename];
+NSLog(@"filename:%@",filename);
+//缩放倍数
+[representation scale];
+//图片资源容量大小
+[representation size];
+//图片资源原数据
+ [representation metadata];
+//旋转方向
+[representation orientation];
+ //资源图片url地址，该地址和ALAsset通过ALAssetPropertyAssetURL获取的url地址是一样的
+NSURL* url = [representation url];
+NSLog(@"url:%@",url);
+//资源图片uti，唯一标示符
+NSLog(@"uti:%@",[representation UTI]);</pre>
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2014-10-16
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#相册-ref" >相册</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

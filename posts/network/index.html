@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>计算机网络的五层协议体系</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/network/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/network/">计算机网络的五层协议体系</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>写这篇博客，主要是看了谢希仁的计算机网络那本书，计算机专业的朋友在大学期间都学过那本教材，近日重读特写这篇博客。</p>
+
+<p>五层模型主要是结合了osi的七层和tcp／ip的四层得出，主要是物理层、数据链路层、网络层、传输层、应用层五层，下层向上层提供服务，上层向下层提供接口。作为一个iOS开发者接触比较多的就是上面两层，所以本文也主要介绍上面两层。</p>
+
+<h2 id="传输单位">传输单位</h2>
+
+<p>先讲一讲各层的传输单位，应用层是报文（message），报文在发送之前一般会划分成为等长的数据段，在每段前面加上一些必要的控制信息组成的首部后，就构成了一个分组（packet），也叫做包，首部也可叫包头。无论在哪一层传送的数据单元，习惯上都可以笼统地用分组来表示。</p>
+
+<p>传输层主要使用TCP和UDP，如果使用TCP的话，单位是报文段（segment），UDP的单位是用户数据报。在发送数据时，网络层把传输层产生的报文段或者用户数据报封装成分组或包进行传送，由于网络层使用IP协议，分组也叫做IP数据报，简称数据报。 数据链路层将网络层交下来的IP数据报组装成帧（framing），物理层单位是比特，就是0和1。</p>
+
+<h2 id="中间设备">中间设备</h2>
+
+<p>从一般的概念讲，讲网络互联起来要使用一些中间设备，物理层使用的中间设备叫做转发器（repeater），数据链路层使用的中间设备叫做网桥或桥接器（bridge），网络层使用的中间设备叫做路由器（router），网络层以上使用的中间设备叫做网关（gateway）。</p>
+
+<h2 id="物理层">物理层</h2>
+
+<p>接下来简单介绍一下物理层，首先需要明白的是物理层不是指具体的物理设备或者信号传输的物理媒体，而是指在物理媒体之上为上一层（链路层）提供一个传输原始比特流的物理连接。这一层实现的硬件是集线器（hub），它对接收到的信号进行再生整形放大，以扩大网络的传输距离，同时把所有节点集中在以它为中心的节点上。</p>
+
+<h2 id="数据链路层">数据链路层</h2>
+
+<p>数据链路层协议有许多种，但是有三个基本问题则是共同的，这三个问题就是：封装成帧、透明传输、差错检测。关于差错控制，比特在传输过程中可能0变1，1变0，这叫做比特差错，数据链路层广泛使用了循环冗余检验CRC（Cyclic Redundancy Check）。数据链路层使用两种信道：点对点信道和广播信道，点对点协议PPP（point-to-point protocol）则是点对点信道常用的协议，也是该层最广泛的协议，工作在该层的硬件是网桥。</p>
+
+<h2 id="网络层">网络层</h2>
+
+<p>第三层是网络层，网络层向上层提供的是无连接的数据报服务，数据报服务的可靠通信应该由用户主机来保证、连接的建立可以不需要、每个分组都有终点的完整地址、分组独立选择路由进行转发，当结点出故障时，故障结点可能会丢失分组，一些路由可能会发生改变，到达终点不一定按发送顺序，端到端的差错控制和流量控制由用户主机负责。网络层不提供服务质量的承诺，IP数据报首部中的检验和字段，只检验首部是否出现差错而不检查数据部分。如果主机中的进程之间的通信需要是可靠的，那么就由网络的主机中的运输层负责（包括差错处理、流量控制等），IP协议是该层的核心协议，IP协议的主要功能就是无连接的数据报传输、数据报路由选择和差错控制。</p>
+
+<h2 id="传输层">传输层</h2>
+
+<p>第四层是传输层，它属于面向通信的最高层，同时也是用户功能中的最底层。当网络的边缘部分中的两个主机使用网络的核心部分的功能进行端到端的通信时，只有主机的协议栈才有传输层，而网络核心部分中的路由器在转发分组时都只用到下三层的功能。网络层是为主机之间提供逻辑通信，而传输层为应用进程之间提供端到端的逻辑通信。端口是应用层各协议进程与运输实体进行层间交互的一种地址，传输层的端口号分为两大类，一是服务器使用的端口号，这里又分两类，熟知端口号，也叫系统端口号，数值为0～1023，例如FTP（21）、HTTP（80）、SMTP（25）等，另一种是登记端口号，数值在1024～49151；另一类是客户端使用的端口号，数值在49152～65535之间。</p>
+
+<p>传输层有一个重要的功能是复用和分用，复用是指发送方不同的应用进程可以使用同一个传输层协议传送数据，而分用是指接收方的传输层在剥去报文的首部后能够把这些数据正确交付到目的进程。
+传输层有两个协议，面向连接的TCP和无连接的UDP。UDP是无连接的，使用尽最大努力交付，即不可靠交付，UDP是面向报文的，UDP没有拥塞控制，因此网络出现的拥塞不会使源主机发送速率降低，UDP支持一对一、一对多、多对一、多对多的交互通信，UDP的首部开销小。TCP是面向连接的传输层协议，TCP连接只能是一对一的，它提供可靠的交付服务，也就是说，通过TCP连接传送的数据，无差错、不丢失、不重复、并且按序到达，TCP提供全双工通信，TCP是面向字节流的，TCP把应用程序交下来的数据块看成无结构的字节流，TCP不保证接收方应用程序收到的数据块和发送方应用程序所发出的数据块具有对应的大小关系（例如，发送方应用程序交给发送方TCP共10个数据块，但接收方的TCP可能只用4个数据块就把收到的字节流交付给了上层的应用程序，但接收方应用程序收到的字节流必须和发送方应用程序发出的字节流完全一样）。</p>
+
+<p>TCP连接的端点叫做套接字（socket）或插口，即（IP地址：端口号），每一条TCP连接唯一地被通信两端的两个端点（即两个套接字）所确定。</p>
+
+<p>TCP的运输连接有三个阶段，即连接建立、数据传送、连接释放。TCP连接建立的过程要使每一方能够确定对方的存在，主动发起连接建立的应用进行叫做客户（client），被动等待连接建立的应用进程叫做服务器（server），连接建立的过程叫做三次握手，假设A为客户，B为服务器，A发送一个报文给B，B发回确认，然后A再加以确认，来回共三次。</p>
+
+<p><img class=" aligncenter" src="http://7u2k5i.com1.z0.glb.clouddn.com/coderyi_tcp3.png" alt="tcp3" width="524" height="363" /></p>
+
+<p>连接的释放需要发送四个包，因此成为四次挥手。客户端或服务器都可以主动发起挥手动作。</p>
+
+<p><img class=" aligncenter" src="http://7u2k5i.com1.z0.glb.clouddn.com/coderyi_tcp4.png" alt="tcp4" width="523" height="370" /></p>
+
+<h2 id="应用层">应用层</h2>
+
+<p>第五层是应用层，FTP（对应应用，文件传送）、HTTP（对应应用万维网）、TELNET（远程终端接入）、SMTP（电子邮件）使用的传输层协议都是TCP，DNS（名字转换）、TFTP（文件传送）、专用协议（IP电话、流式媒体通信）等使用的传输层协议都是UDP。
+以上就是计算机网络的五层协议。</p>
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2014-07-06
+     • Category: 
+        
+        <a href="/categories//#tech-ref" >Tech</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#网络通信-ref" >网络通信</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Weex学习与实践(三):iOS原理篇</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/weex3/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/weex3/">Weex学习与实践(三):iOS原理篇</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p><a href="http://coderyi.com/posts/weex1/">Weex学习与实践(一):Weex,你需要知道的事</a></p>
+
+<p><a href="http://coderyi.com/posts/weex2/">Weex学习与实践(二):iOS集成的tips</a></p>
+
+<p><a href="http://coderyi.com/posts/weex3/">Weex学习与实践(三):iOS原理篇</a></p>
+
+<p>本文主要介绍包括WeexSDK-iOS主要类介绍、Weex页面iOS端渲染流程、JS调用iOS方法</p>
+
+<h3 id="主要类">主要类</h3>
+
+<h4 id="wxsdkengine">WXSDKEngine</h4>
+
+<p>WXSDKEngine主要用于初始化WeexSDK的环境</p>
+
+<p>一开始会载入配置文件main.js并且注册一些默认的组件、模块以及handler</p>
+
+<pre>
++ (void)initSDKEnviroment:(NSString *)script
+{
+   
+    [self _registerDefaultComponents];
+    [self _registerDefaultModules];
+    [self _registerDefaultHandlers];
+    
+    [[WXSDKManager bridgeMgr] executeJsFramework:script];
+}
+
+</pre>
+
+<p>在executeJsFramework前，会设置后JSContext的一些回调，例如</p>
+<pre>
+    _jsContext[@"callNative"] = callNativeBlock;
+</pre>
+<p>以方便JS调用native的方法。</p>
+
+<p>executeJsFramework调用的是JSContext的evaluateScript方法，把main.js运行到jS的环境里面，之后再通过JSValue调用invokeMethod方法，把前面所有的components，modules，handlers注册进入JS环境</p>
+
+<h4 id="wxsdkinstance">WXSDKInstance</h4>
+
+<p>一个WXSDKInstance就对应一个UIViewController,对应一个weex页面。</p>
+
+<p>主要用来渲染页面,一般通过renderWithURL方法，然后能够接收一些回调和一些视图相关的方法</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>onCreate //根视图rootView创建的时候
+renderFinish//视图渲染完成
+componentForRef //通过视图索引拿到对应的组件视图
+</code></pre></div></div>
+
+<h4 id="wxbridgemanager">WXBridgeManager</h4>
+
+<p>WXBridgeManager 是JS与iOS通过JSCore交互的类,相关的类还有WXBridgeContext、WXJSCoreBridge。</p>
+
+<p>比如调用JS</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+- (void)executeJsMethod:(WXBridgeMethod *)method
+{
+    if (!method) return;
+    
+    __weak typeof(self) weakSelf = self;
+    WXPerformBlockOnBridgeThread(^(){
+        [weakSelf.bridgeCtx executeJsMethod:method];
+    });
+}
+</code></pre></div></div>
+
+<p>JS调用native的话需要通过WXJSCoreBridge的registerCallNative方法</p>
+
+<h4 id="wxcomponent">WXComponent</h4>
+
+<p>组件基类，自己实现iOS端的组件需要继承它。相关的还有负责组件初始化的工厂类WXComponentFactory，以及WXComponentManager</p>
+
+<h4 id="wxmoduleprotocol">WXModuleProtocol</h4>
+
+<p>自定义module需要实现的协议</p>
+
+<h3 id="weex页面ios端渲染流程">weex页面iOS端渲染流程</h3>
+
+<p>首先在ViewController里的render放初始化WXSDKInstance，因为render会支持实时刷新，所以每次都需要先销毁这个实例。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [_instance destroyInstance];
+    _instance = [[WXSDKInstance alloc] init];
+
+</code></pre></div></div>
+
+<p>然后WXSDKManager会保存instanceId</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        [WXSDKManager storeInstance:self forID:_instanceId];
+
+</code></pre></div></div>
+
+<p>然后会调用renderWithURL方法来载入script,在这里会判断是本地文件还是需要从服务器下载，</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
+	    if ([url isFileURL]) {
+        //from local
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSString *path = [url path];
+            NSData *scriptData = [[NSFileManager defaultManager] contentsAtPath:path];
+            NSString *script = [[NSString alloc] initWithData:scriptData encoding:NSUTF8StringEncoding];
+            [weakSelf renderView:script options:newOptions data:data];
+        });
+    }else{
+    	//from server
+    }
+}
+
+</code></pre></div></div>
+
+<p>然后就会根据script文件渲染视图</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[weakSelf renderView:script options:newOptions data:data];
+
+</code></pre></div></div>
+
+<p>在这个方法里面首先会创建根视图，当创建完成时WXSDKInstance会收到onCreate的回调</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    //TODO WXRootView
+    WXPerformBlockOnMainThread(^{
+        self.rootView = [[WXView alloc] initWithFrame:self.frame];
+        if(self.onCreate) {
+            self.onCreate(self.rootView);
+        }
+    });
+
+</code></pre></div></div>
+
+<p>之后再通过bridge调用JS方法来开始创建实例</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self callJSMethod:@"createInstance" args:args];
+
+</code></pre></div></div>
+
+<p>然后这里会判断JSFramework也就是js有没有加载完成，然后再通过WXJSBridge的JSContext来执行js方法，这里调用的就是js的createInstance方法，args里面主要就是instanceID，we文件转化的js文件，和options。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)callJSMethod:(NSString *)method args:(NSArray *)args
+{
+    [[_jsContext globalObject] invokeMethod:method withArguments:args];
+}
+
+</code></pre></div></div>
+
+<p>最后js会调用JSContext的callCreateFinish回调，最后调用WXSDKInstance的createFinish方法来结束页面的渲染</p>
+
+<h3 id="js调用ios方法">JS调用iOS方法</h3>
+
+<p>首先要注册一个组件</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self registerModule:@"dom" withClass:NSClassFromString(@"WXDomModule")];
+
+</code></pre></div></div>
+<p>注册module的时候 会通过下面方法</p>
+
+<pre><code class="language-objective-c">+ (void)registerModule:(NSString *)name withClass:(Class)clazz
+{
+    WXAssert(name &amp;&amp; clazz, @"Fail to register the module, please check if the parameters are correct ！");
+    
+    NSString *moduleName = [WXModuleFactory registerModule:name withClass:clazz];
+    NSDictionary *dict = [WXModuleFactory moduleMethodMapsWithName:moduleName];
+    
+    [[WXSDKManager bridgeMgr] registerModules:dict];
+}
+</code></pre>
+<p>把所有通过宏注册的方法发送给js端</p>
+
+<pre>
+WX_EXPORT_METHOD(@selector(createBody:))
+
+</pre>
+
+<p>这会把方法暴露出来，并且方法名字是”wx_export_method_“加代码所在行号，wx_export_method_25</p>
+
+<p>组件、模块 是给js端用的，而handler则是给objc自己用的，所以不用发送消息给js端</p>
+
+<p>然后通过methodForSelector拿到WX_EXPORT_METHOD方法的返回值，并且保存到methods中</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerModuleMethods {
+
+            if ([currentClass respondsToSelector:selector]) {
+                method = ((NSString* (*)(id, SEL))[currentClass methodForSelector:selector])(currentClass, selector);
+            }
+            [_methods setObject:method forKey:name];
+
+}
+
+</code></pre></div></div>
+
+<p>然后拿到WXModuleConfig组成的_moduleMap之后再发送给JS端</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [[WXSDKManager bridgeMgr] registerModules:dict];
+
+</code></pre></div></div>
+
+<p>这里就是前面提到的调用JSContext的invokeMethod把内容发送到JS端</p>
+
+<p>最后需要自己callNative的回调，当JS调用时就会传值到这里</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerCallNative:(WXJSCallNative)callNative
+{
+    NSInteger (^callNativeBlock)(JSValue *, JSValue *, JSValue *) = ^(JSValue *instance, JSValue *tasks, JSValue *callback){
+        NSString *instanceId = [instance toString];
+        NSArray *tasksArray = [tasks toArray];
+        NSString *callbackId = [callback toString];
+        
+        return callNative(instanceId, tasksArray, callbackId);
+    };
+    
+    _jsContext[@"callNative"] = callNativeBlock;
+}
+</code></pre></div></div>
+
+<p>tasks里面包括方法的一些相关信息,包括module（比如dom），method（比如updateFinish），args</p>
+
+<h1 id="weex-devtool-ios"><a href="https://github.com/weexteam/weex-devtool-iOS">weex-devtool-iOS</a></h1>
+
+<p>weex-devtool-iOS	其实是 <a href="https://github.com/square/PonyDebugger">PonyDebugger</a>的衍生品。</p>
+
+<p><a href="http://www.iliunian.com/2875.html">使用PonyDebugger调试iOS应用</a></p>
+
+<p><a href="https://github.com/Flipboard/FLEX/blob/000e061d009bb7c64c8338f1715431ad9b5f1558/Classes/Network/PonyDebugger/FLEXNetworkObserver.m">FLEXNetworkObserver</a></p>
+
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2016-10-17
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#Weex-ref" >Weex</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

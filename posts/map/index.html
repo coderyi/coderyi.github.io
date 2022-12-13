@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>iOS定位服务与地图应用开发：高德地图开发</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/map/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/map/">iOS定位服务与地图应用开发：高德地图开发</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>2014-07-09</p>
+
+<p>之前工作在一家智能设备的公司，做过一个亲友定位监控系统，类似现在比较流行的360儿童手环。所以这里简单介绍定位与地图。</p>
+
+<p>1 定位服务
+iOS设备提供三种不同定位途径，蜂窝式移动电话基站定位；WiFi定位，通过查询一个WiFi路由器的地理位置信息，比较省电；GPS卫星定位，通过3～4颗卫星定位，最为准确，但是耗电量大。iOS系统如果能够接收GPS信息，那么设备优先采用GPS，其次是WiFi，最后是基站，开发人员不能选择哪种定位方式。</p>
+
+<p>定位服务使用CoreLocation框架，主要使用CLLocationMananger、CLLocationManangerDelegate和CLLocation三个类，CLLocationMananger是定位服务管理类，获取设备的位置信息，CLLocationManangerDelegate是代理协议，CLLocation封装了位置信息。</p>
+
+<p>这里要注意，CLLocationManangerDelegate 的locationManager:didUpdateToLocation:fromLocation:方法得到的坐标是火星坐标，这个原因你懂得，所以需要转换成真实的地理坐标。我使用的是一个第三方的CSqlite类，有一个转换坐标的数据库，你调用就可以转换为正确坐标了。</p>
+
+<p>得到经纬度后，要进行地理位置信息反编码，使用CLGeocoder类实现，将地理坐标转换为地理文字描述信息，这些文字描述信息被封装在CLPlacemark类中。</p>
+
+<p>当然给定地理信息的文字描述，也可以进行地理信息编码查询，转换为地理坐标，也是采用CLGeocoder类。</p>
+
+<p>判断一个坐标点是否在一个无规则的多边形内</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">
+//    在范围内返回1，不在返回0
+-(int)mutableBoundConrtolAction:(NSMutableArray *)arrSome:(CLLocationCoordinate2D )myCoordinate4{
+    int n=arrSome.count;
+    float vertx[n];
+    float verty[n];
+    for (int i=0; i&lt;arrSome.count; i++) {
+//MyPoint类存储的是经度和纬度
+        vertx[i]=((MyPoint *)(arrSome[i])).x;
+        verty[i]=((MyPoint *)(arrSome[i])).y;
+    }
+    if (arrSome.count==0) {
+
+        return 1;
+    }
+    BOOL i=pnpoly(arrSome.count, vertx, verty, myCoordinate4.latitude, myCoordinate4.longitude);
+
+
+    if (i) {
+        return 1;
+    }else{
+        return 0;
+    }
+
+
+    return 1;
+}
+//多边形由边界的坐标点所构成的数组组成，参数格式 该数组的count，  多边形边界点x坐标 的组成的数组，多边形边界点y坐标 的组成的数组，需要判断的点的x坐标，需要判断的点的y坐标
+BOOL pnpoly (int nvert, float *vertx, float *verty, float testx, float testy) {
+    int i, j;
+    BOOL c=NO;
+    for (i = 0, j = nvert-1; i &lt; nvert; j = i++) {
+
+        if ( ( (verty[i]&gt;testy) != (verty[j]&gt;testy) ) &amp;&amp;
+            (testx &lt; (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+            c = !c;
+    }
+    return c;
+}
+</pre>
+<p>2 系统地图</p>
+
+<p>地图我目前用过系统、百度以及高德，开发人员使用都是差不多的，下面的代码涉及的类都是高德地图api提供的类。</p>
+
+<p>我之前做项目，使用高德地图，做到后期，项目会出现闪退，后来查出是地图区域内存的问题，然后重新布局了地图区域，使得每一个地图区域能够及时销毁，虽然闪退周期明显延长，但是还是存在，这里不知道是何原因，说来惭愧。</p>
+
+<p>设置地图区域</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">
+-(void)SetMapRegion:(CLLocationCoordinate2D)myCoordinate
+{
+    MACoordinateRegion theRegion = { {0.0, 0.0 }, { 0.0, 0.0 } };
+    theRegion.center=myCoordinate;
+    [self.m_map setScrollEnabled:YES];
+    theRegion.span.longitudeDelta = 0.01f;
+    theRegion.span.latitudeDelta = 0.01f;
+    [self.m_map setRegion:theRegion animated:YES];
+}
+</pre>
+<p>平移地图，上下左右</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">
+-(void)panMap:(NSString *)direction{
+    CLLocationCoordinate2D changeCoordinate=self.m_map.centerCoordinate;
+    CGPoint changePoint=[self.m_map convertCoordinate:changeCoordinate toPointToView:self.m_map];
+
+    if ([direction isEqualToString:@"up"]) {
+        changePoint.y=changePoint.y+50;
+
+    }else if ([direction isEqualToString:@"down"]) {
+        changePoint.y=changePoint.y-50;
+    }else if ([direction isEqualToString:@"left"]) {
+        changePoint.x=changePoint.x-50;
+    }else if ([direction isEqualToString:@"right"]) {
+        changePoint.x=changePoint.x+50;
+    }
+    changeCoordinate=[self.m_map convertPoint:changePoint toCoordinateFromView:self.m_map];
+    [self.m_map setCenterCoordinate:changeCoordinate animated:YES];
+}
+</pre>
+<p>判断某一个坐标点是否在当前地图区域内</p>
+<pre lang="objc" escaped="true" style="background: #E8F2FB ;">
+-(void)isAtCurrentRegion:(CLLocationCoordinate2D)coordiante{
+
+    CGPoint point=[self.m_map convertCoordinate:coordiante toPointToView:self.view];
+    if ((point.x&lt;0)||(point.y&lt;0)||(point.x&gt;WScreen)||(point.y&gt;HScreen)) {
+//        如果不在 设置该点为地图中心点
+        [self SetMapRegion:coordiante];
+    }
+
+
+}
+</pre>
+<p>在地图上添加标注</p>
+
+<p>系统地图使用MapKit框架，核心是MKMapView类，显示地图只要添加MKMapView实例就可以了。如果要实现在地图上添加标注点，第以是触发添加动作，第二实现MKMapViewDelegate的mapView：viewForAnnotation：完成添加标注。</p>
+
+<p>高德地图实现的原理也是一样的，高德地图使用的是MAMapKit框架。对于annotation，一般会自定义一个继承NSobject并且实现了maannotation协议的类，然后使用mapview的addAnnotation:方法就可以。MKReverseGeocoder类可以实现coordinate的反编码，这里需要实现它的代理，把得到的地理文字描述信息赋给annotation。这里需要实现代理的mapView:viewForAnnotation:方法，一个标注其实就是一个MAAnnotationView，标注有点类似tableviewcell，这里也有重用机制。实现代理的mapView:annotationView:calloutAccessoryControlTapped:方法可以响应leftCalloutAccessoryView或者rightCalloutAccessoryView的点击事件，不过这个accessory view必须继承自UIControl。
+在地图上绘制线条和多边形</p>
+
+<p>MAPolyline类定义一个由多个点相连的多段线，点与点之间尾部想连但第一点与最后一个点不相连, 通常MAPolyline是MAPolylineView的model，它提供了两个方法polylineWithPoints:count:、polylineWithCoordinates:count:用来添加线条，然后再通过map view的addOverlay：方法把Polyline实例添加进去，最后实现mapviewdelegate的mapView:viewForOverlay:方法就可以了。注意如果一开始添加的不是coordinate，而是point，可以通过map view的convertPoint:toCoordinateFromView:方法进行转换。</p>
+
+<p>MAPolygon类定义的就是一个不规则的由多个点组成的闭合多边形，点与点之间按顺序尾部相连, 第一个点与最后一个点相连, 通常MAPolygon是MAPolygonView的model，首先需要添加坐标点的数组，可以使用polygonWithCoordinates：count:方法或者polygonWithPoints:count:方法，然后把这个polygon通过addOverlay：方法添加到map view上就可以了。然后可以在mapviewdelegate里面的mapView:viewForOverlay:方法里面给MAPolygonView的属性赋值，这样一个完整的多边形就出来了。</p>
+
+<p>不管是高德地图还是百度地图等第三方，都会有一个mapsearchkit，这是一个用于查询的框架，有兴趣的朋友可以多加研究。</p>
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2014-07-09
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#地图-ref" >地图</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

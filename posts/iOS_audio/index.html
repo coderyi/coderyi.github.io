@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>iOS的音频简介</title>
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="">
+
+    
+    
+
+    <link rel="canonical" href="http://localhost:4000/posts/iOS_audio/">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/monster.css">
+
+    
+
+</head>
+
+
+    <body>
+    
+    <div class="wrapper">
+
+      <header class="header">
+
+  <div class="site-title">
+    
+    <h4 class="entry-title"><a href="/posts/iOS_audio/">iOS的音频简介</a></h4>
+    
+  </div>
+
+<div class="links">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+</header>
+
+      
+      <div class="navi">
+    
+    <a href="/" class="page-link">Blog</a>
+    
+    
+    
+    
+      <a class="page-link"
+        href="/about/">About</a>
+    
+    
+    
+      <a class="page-link"
+        href="/categories/">Categories</a>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      <a class="page-link"
+        href="/tags/">Tags</a>
+    
+    
+    <a href="/feed.xml" target="_blank" class="page-link">RSS</a>
+</div>
+
+
+      <div class="content">
+        <div class="articles">
+            <div class="entry post">
+
+	<div class="entry-content">
+	  <article class="entry-body">
+	  	
+	  		<p>2015-06-08</p>
+
+<p><strong><span style="color: #3d82c6;">音频的基本知识</span></strong></p>
+
+<p>声音是波的一种，频率和振幅是描述波的重要属性，频率的大小与我们通常所说的音高对应，而振幅影响声音的大小。频率的单位是赫兹，赫兹是电、磁、声波和机械振动周期循环时频率的单位，即每秒的周期次数(周期/秒)。对于声音，人类的听觉范围为20Hz～20000Hz，低于这个范围叫做次声波，高于这个范围的叫做超声波。</p>
+
+<p>数码录音最关键一步就是要把模拟信号转换为数码信号，就电脑而言是把模拟声音信号录制成为音频文件。</p>
+
+<p>描述音频文件主要有两个指标，一个是采样频率，或称采样率、采率，另一个是采样精度也就是比特率。</p>
+
+<p>采样，指把时间域或空间域的连续量转化成离散量的过程。每秒钟的采样样本数叫做采样频率。采样频率越高，数字化后声波就越接近于原来的波形，即声音的保真度越高，但量化后声音信息量的存储量也越大，而人的耳朵已经很难分辨。根据采样定理，只有当采样频率高于声音信号最高频率的两倍时，才能把离散模拟信号表示的声音信号唯一地还原成原来的声音。我们最常用的采样频率是44.1kHz，它的意思是每秒取样44100次。</p>
+
+<p>比特率是指每秒传送的比特(bit)数，单位为 bps(Bit Per Second)。比特率越高，传送数据速度越快。声音中的比特率是指将模拟声音信号转换成数字声音信号后，单位时间内的二进制数据量。比特率其实就是表示振幅，比特率越大，能够表示声音的响度越清晰。</p>
+
+<p><strong><span style="color: #3d82c6;">iOS音频的基础</span></strong></p>
+
+<p>接着我们要整体了解下iOS为我们提供处理音频的基础技术，核心音频（Core Audio）。</p>
+
+<p>Core Audio 是IOS和 MAC 的关于数字音频处理的基础，它提供应用程序用来处理音频的一组软件框架，所有关于IOS音频开发的接口都是由Core Audio来提供或者经过它提供的接口来进行封装的，按照官方的说法是集播放，音频处理录制为一体的专业技术，通过它我们的程序可以同时录制，播放一个或者多个音频流，自动适应耳机，蓝牙耳机等硬件，响应各种电话中断，静音，震动等，甚至提供3D效果的音乐播放。</p>
+
+<p>Core Audio有5个框架：1.Core Audio.framework，2.AudioToolbox.framework，3.AudioUnit.framework ，4.AVFoundation.framework，5.OpenAL.framework。</p>
+
+<p><a href="http://blog.csdn.net/GooHong/article/details/28911301">参考:iOS框架和服务</a></p>
+
+<p>Core Audio.framework并不提供服务，仅提供其他框架可以使用的头文件和数据类型。这其中AVFoundation 框架 (AVFoundation.framework)提供一组播放、记录和管理声音和视频内容的Objective-C类，因此下面我就简单介绍一下他就可以了。</p>
+
+<p><strong><span style="color: #3d82c6;">AVFoundation的录音和播放</span></strong></p>
+
+<p>音频的录制与播放主要和三个类有关AVAudioSession，AVAudioRecorder，AVAudioPlayer。</p>
+
+<p><strong>AVAudioSession</strong></p>
+
+<p>AVAudioSession类由AVFoundation框架引入，每个iOS应用都有一个音频会话，这个会话可以被AVAudioSession类的sharedInstance类方法访问，如下：</p>
+<pre lang="objc" style="background: #E8F2FB;">AVAudioSession *audioSession = [AVAudioSession sharedInstance];</pre>
+
+<p>在获得一个AVAudioSession类的实例后，你就能通过调用音频会话对象的setCategory:error:实例方法，来从IOS应用可用的不同类别中作出选择。</p>
+
+<p><strong>AVAudioRecorder</strong></p>
+
+<p>在使用AVAudioRecorder进行音频录制的时候，需要设置一些参数，下面就是参数的说明，并且写下了音频录制的代码：</p>
+<pre lang="objc" style="background: #E8F2FB;">//音频开始录制
+- (void)startRecordWithFilePath:(NSString *)path{
+    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error:nil];
+    [[AVAudioSession sharedInstance] setActive:YES error:nil];
+
+    /**
+     *
+     AVFormatIDKey  音乐格式，这里采用PCM格式
+     AVSampleRateKey 采样率
+     AVNumberOfChannelsKey 音乐通道数
+     AVLinearPCMBitDepthKey,采样位数 默认 16
+     AVLinearPCMIsFloatKey,采样信号是整数还是浮点数
+     AVLinearPCMIsBigEndianKey,大端还是小端 是内存的组织方式
+     AVEncoderAudioQualityKey,音频编码质量
+
+     */
+
+    NSDictionary *recordSetting = @{
+                                    AVFormatIDKey               : @(kAudioFormatLinearPCM),
+                                    AVSampleRateKey             : @(8000.f),
+                                    AVNumberOfChannelsKey       : @(1),
+                                    AVLinearPCMBitDepthKey      : @(16),
+                                    AVLinearPCMIsNonInterleaved : @NO,
+                                    AVLinearPCMIsFloatKey       : @NO,
+                                    AVLinearPCMIsBigEndianKey   : @NO
+                                    };
+
+    //初始化录音
+    self.recorder = [[AVAudioRecorder alloc]initWithURL:[NSURL URLWithString:path]
+                                                settings:recordSetting
+                                                   error:nil];
+    _recorder.delegate = self;
+    _recorder.meteringEnabled = YES;
+
+    [_recorder prepareToRecord];
+    [_recorder record];
+}
+
+//音频停止录制
+- (void)stopRecord
+{
+
+    [self.recorder stop];
+    self.recorder = nil;
+
+}
+</pre>
+
+<p><strong>AVAudioPlayer</strong></p>
+
+<p>AVAudioPlayer类是音频播放的类，一个AVAudioPlayer只能播放一个音频，如果你想混音你可以创建多个AVAudioPlayer实例，每个相当于混音板上的一个轨道，下面就是音频播放的方法。</p>
+<pre lang="objc" style="background: #E8F2FB;">//音频开始播放
+
+- (void)startPlayAudioFile:(NSString *)fileName{
+    //初始化播放器
+    player = [[AVAudioPlayer alloc]init];
+
+    player = [player initWithContentsOfURL:[NSURL URLWithString:fileName] error:nil];
+    self.player.delegate = self;
+    [player play];
+
+
+}
+
+//音频停止播放
+- (void)stopPlay{
+    if (self.player) {
+        [self.player stop];
+        self.player.delegate = nil;
+        self.player = nil;
+    }
+}
+</pre>
+
+<p>转载请附原文地址<a title="https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md" href="https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md">https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md</a> 。</p>
+
+  		
+	  </article>
+    </div>
+
+</div>
+
+<div class="article-meta">
+    2015-06-08
+     • Category: 
+        
+        <a href="/categories//#iOS-ref" >Ios</a>
+        
+    
+     • Tag: 
+        
+            <a href="/tags//#音视频-ref" >音视频</a>
+        
+    
+</div>
+
+
+
+	<div class="article-author">
+    <div class="avatar">
+    <img width="50" height="50" src="/images/logo.png" alt=" Avatar"/>
+    </div>
+    <div class="name">
+        <h4><b>coderyi</b> </h4>
+        about iOS ,CS and my code life 
+    </div>
+</div>
+
+
+	
+	    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'coderyi';
+	(function() {
+	    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+	    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	
+
+
+<div class="cnzz"><script src="http://s4.cnzz.com/z_stat.php?id=1255123325&web_id=1255123325" language="JavaScript"></script> </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    </body>
+</html>

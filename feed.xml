@@ -5,9 +5,9 @@
     <description>生命不止，折腾不息</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Thu, 21 Nov 2019 14:32:03 +0800</pubDate>
-    <lastBuildDate>Thu, 21 Nov 2019 14:32:03 +0800</lastBuildDate>
-    <generator>Jekyll v4.0.0</generator>
+    <pubDate>Sat, 21 Jan 2023 22:19:57 +0800</pubDate>
+    <lastBuildDate>Sat, 21 Jan 2023 22:19:57 +0800</lastBuildDate>
+    <generator>Jekyll v4.3.1</generator>
     
       <item>
         <title>Weex学习与实践(三):iOS原理篇</title>
@@ -54,7 +54,7 @@
 
 &lt;p&gt;主要用来渲染页面,一般通过renderWithURL方法，然后能够接收一些回调和一些视图相关的方法&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;onCreate //根视图rootView创建的时候
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;onCreate //根视图rootView创建的时候
 renderFinish//视图渲染完成
 componentForRef //通过视图索引拿到对应的组件视图
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -65,7 +65,7 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 &lt;p&gt;比如调用JS&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
 - (void)executeJsMethod:(WXBridgeMethod *)method
 {
     if (!method) return;
@@ -91,20 +91,20 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 &lt;p&gt;首先在ViewController里的render放初始化WXSDKInstance，因为render会支持实时刷新，所以每次都需要先销毁这个实例。&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [_instance destroyInstance];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [_instance destroyInstance];
     _instance = [[WXSDKInstance alloc] init];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;然后WXSDKManager会保存instanceId&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        [WXSDKManager storeInstance:self forID:_instanceId];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        [WXSDKManager storeInstance:self forID:_instanceId];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;然后会调用renderWithURL方法来载入script,在这里会判断是本地文件还是需要从服务器下载，&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
 	    if ([url isFileURL]) {
         //from local
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -122,13 +122,13 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 &lt;p&gt;然后就会根据script文件渲染视图&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[weakSelf renderView:script options:newOptions data:data];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[weakSelf renderView:script options:newOptions data:data];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;在这个方法里面首先会创建根视图，当创建完成时WXSDKInstance会收到onCreate的回调&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    //TODO WXRootView
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    //TODO WXRootView
     WXPerformBlockOnMainThread(^{
         self.rootView = [[WXView alloc] initWithFrame:self.frame];
         if(self.onCreate) {
@@ -140,13 +140,13 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 &lt;p&gt;之后再通过bridge调用JS方法来开始创建实例&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self callJSMethod:@&quot;createInstance&quot; args:args];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self callJSMethod:@&quot;createInstance&quot; args:args];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;然后这里会判断JSFramework也就是js有没有加载完成，然后再通过WXJSBridge的JSContext来执行js方法，这里调用的就是js的createInstance方法，args里面主要就是instanceID，we文件转化的js文件，和options。&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)callJSMethod:(NSString *)method args:(NSArray *)args
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)callJSMethod:(NSString *)method args:(NSArray *)args
 {
     [[_jsContext globalObject] invokeMethod:method withArguments:args];
 }
@@ -159,7 +159,7 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 &lt;p&gt;首先要注册一个组件&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self registerModule:@&quot;dom&quot; withClass:NSClassFromString(@&quot;WXDomModule&quot;)];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [self registerModule:@&quot;dom&quot; withClass:NSClassFromString(@&quot;WXDomModule&quot;)];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;注册module的时候 会通过下面方法&lt;/p&gt;
@@ -187,7 +187,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 &lt;p&gt;然后通过methodForSelector拿到WX_EXPORT_METHOD方法的返回值，并且保存到methods中&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerModuleMethods {
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerModuleMethods {
 
             if ([currentClass respondsToSelector:selector]) {
                 method = ((NSString* (*)(id, SEL))[currentClass methodForSelector:selector])(currentClass, selector);
@@ -200,7 +200,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 &lt;p&gt;然后拿到WXModuleConfig组成的_moduleMap之后再发送给JS端&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [[WXSDKManager bridgeMgr] registerModules:dict];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [[WXSDKManager bridgeMgr] registerModules:dict];
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
@@ -208,7 +208,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 &lt;p&gt;最后需要自己callNative的回调，当JS调用时就会传值到这里&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerCallNative:(WXJSCallNative)callNative
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)registerCallNative:(WXJSCallNative)callNative
 {
     NSInteger (^callNativeBlock)(JSValue *, JSValue *, JSValue *) = ^(JSValue *instance, JSValue *tasks, JSValue *callback){
         NSString *instanceId = [instance toString];
@@ -260,23 +260,23 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 &lt;p&gt;目前官方的alibaba/Weex仓库里面&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    pod 'WeexSDK', :path=&amp;gt;'../sdk/'
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    pod 'WeexSDK', :path=&amp;gt;'../sdk/'
     pod 'WXDevtool', :path=&amp;gt;'../WXDevtool/'
     pod 'ATSDK-Weex', '0.0.1'
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;它们直接使用的weex仓库的sdk,但是weex主仓库的WXDevtool已经不维护了，需要替换成，&lt;a href=&quot;https://github.com/weexteam/weex-devtool-iOS&quot;&gt;weexteam/weex-devtool-iOS&lt;/a&gt;的代码。&lt;/p&gt;
 
-&lt;p&gt;另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framwork,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。&lt;/p&gt;
+&lt;p&gt;另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framework,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。&lt;/p&gt;
 
 &lt;p&gt;当然你也可以不用通过cocoapods集成，直接把代码拉进工程就可以，如果发生&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Unknown type name 'NSString'
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Unknown type name 'NSString'
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;你可能需要把layout.c文件右侧的type改为Objective-C Source，或者直接修改为layout.m。&lt;/p&gt;
 
 &lt;p&gt;基本上JS页面是在WXDemoViewController工作的，你可能需要接收页面刷新的通知，以支持实时刷新&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@&quot;RefreshInstance&quot; object:nil];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@&quot;RefreshInstance&quot; object:nil];
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;页面会维护一个WXSDKInstance实例，WXSDKInstance就是weex渲染的实例对象，提供了很多页面渲染相关的接口，比如renderWithURL、refreshInstance、destroyInstance等&lt;/p&gt;
@@ -291,19 +291,19 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 &lt;p&gt;然后实现方法&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
 {}
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;注意这个方法不在主线程，这里面接收一些js传过来的参数，以在js端写的image标记为例子&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;image style=&quot;width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220&quot; src=&amp;gt;&amp;lt;/image&amp;gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;image style=&quot;width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220&quot; src=&amp;gt;&amp;lt;/image&amp;gt;
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;到objc端就是&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ref:701
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ref:701
 type:image
 styles:
 {
@@ -323,7 +323,7 @@ attributes:
 
 &lt;p&gt;然后在loadView的时候可能需要返回自己的objc组件&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (UIView *)loadView
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (UIView *)loadView
 {
     return [[WXImageView alloc] init];
 }
@@ -342,13 +342,13 @@ attributes:
 
 &lt;p&gt;需要做的是实现WXModuleProtocol协议，并且写自己的方法就可以了，这里需要通过weex的宏把需要public的方法导出&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;在module中目前是没有view的，但是你可以通过由js传过来的ref值拿到&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
     CALayer *layer = targetComponent.layer;
     UIView *view = targetComponent.view;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -357,7 +357,7 @@ attributes:
 
 &lt;p&gt;1.如果设置js文件在bundle中载入的话，需要把build的js文件拖入工程，如果的你的we里面一开始就调用了js文件，由于只会buildwe文件，所以还需要把之前的js文件拖入工程，另外examples里面判断iOSAssets是这样的&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;      var isiOSAssets = bundleUrl.indexOf('file:///') &amp;gt;= 0 &amp;amp;&amp;amp; bundleUrl.indexOf('WeexDemo.app') &amp;gt; 0;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;      var isiOSAssets = bundleUrl.indexOf('file:///') &amp;gt;= 0 &amp;amp;&amp;amp; bundleUrl.indexOf('WeexDemo.app') &amp;gt; 0;
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
@@ -404,7 +404,7 @@ attributes:
 &lt;p&gt;组件 就是各种标记组件，比如div 、slider、indicator等
 通过下面这种方式使用&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;div&amp;gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;div&amp;gt;
   &amp;lt;image src=&quot;...&quot;&amp;gt;&amp;lt;/image&amp;gt;
   &amp;lt;text&amp;gt;...&amp;lt;/text&amp;gt;
 &amp;lt;/div&amp;gt;
@@ -425,7 +425,7 @@ attributes:
 
 &lt;p&gt;事件&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &amp;lt;div onviewappear=&quot;viewappear&quot; onviewdisappear=&quot;viewdisappear&quot;&amp;gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &amp;lt;div onviewappear=&quot;viewappear&quot; onviewdisappear=&quot;viewdisappear&quot;&amp;gt;
           ......
   &amp;lt;/div&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -462,13 +462,13 @@ attributes:
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;这时有可能提示&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm WARN babel-loader@6.2.5 requires a peer of babel-core@^6.0.0 but none was installed.
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm WARN babel-loader@6.2.5 requires a peer of babel-core@^6.0.0 but none was installed.
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;你需要再&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm install babel-core
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;npm install babel-core
 
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
@@ -539,7 +539,7 @@ module.exports = {
 
 &lt;p&gt;不过这个自动产生的webpack.config.js的文件有个坑就是，你添加一个新的we文件，他不会自动build为js文件
 可以手动添加&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  entry: {
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  entry: {
     main: path.join(__dirname, 'src', 'main.we?entry=true'),
     translate: path.join(__dirname, 'src', 'translate.we?entry=true')
   }
@@ -547,7 +547,7 @@ module.exports = {
 
 &lt;p&gt;不过推荐的是自己遍历所有的we文件&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;require('webpack')
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;require('webpack')
 require('weex-loader')
 
 var path = require('path')
@@ -614,8 +614,8 @@ module.exports = {
 &lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
 &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;template&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
   &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;子组件&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
 &lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/div&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
 &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/template&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
 &lt;/span&gt;
@@ -632,7 +632,7 @@ module.exports = {
   &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 
   &lt;span class=&quot;nl&quot;&gt;methods&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nl&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
       &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
   &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
@@ -748,7 +748,7 @@ events&lt;/p&gt;
 
 &lt;p&gt;获取url的方式可以通过下面这段JS代码&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function getAppBaseUrl(self) {
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function getAppBaseUrl(self) {
     var dir ='examples'
     var url = self.$getConfig().bundleUrl;
     var bundleUrl = url;
@@ -790,7 +790,7 @@ events&lt;/p&gt;
 
 &lt;p&gt;1.通过 url 参数传递。&lt;/p&gt;
 
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/**
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/**
  * 获取URL参数
  */
 getUrlParam: function (key) {
@@ -860,382 +860,6 @@ getUrlParam: function (key) {
         <guid isPermaLink="true">http://localhost:4000/posts/weex1/</guid>
         
         <category>Weex</category>
-        
-        
-        <category>iOS</category>
-        
-      </item>
-    
-      <item>
-        <title>iOS 10 Today 的适配</title>
-        <description>&lt;h3 id=&quot;ncwidgetproviding&quot;&gt;NCWidgetProviding&lt;/h3&gt;
-
-&lt;pre&gt;
-- (void)widgetActiveDisplayModeDidChange:(NCWidgetDisplayMode)activeDisplayMode withMaximumSize:(CGSize)maxSize NS_AVAILABLE_IOS(10_0);
-&lt;/pre&gt;
-
-&lt;p&gt;这是iOS10新出的API，today多了展开和折叠两种模式，当模块发生改变之后就会调用这个方法。&lt;/p&gt;
-
-&lt;p&gt;activeDisplayMode 为NCWidgetDisplayModeCompact 、NCWidgetDisplayModeExpanded， maxSize为today的最大支持的size。&lt;/p&gt;
-
-&lt;p&gt;activeDisplayMode还可以通过self.extensionContext.widgetActiveDisplayMode获得&lt;/p&gt;
-
-&lt;p&gt;maxSize可以通过[self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeExpanded]获得。&lt;/p&gt;
-
-&lt;p&gt;当然 [self.extensionContext widgetMaximumSizeForDisplayMode:NCWidgetDisplayModeCompact]获得折叠下的最小支持size。&lt;/p&gt;
-
-&lt;p&gt;widgetActiveDisplayMode是一个只读变量，与此还有一个widgetLargestAvailableDisplayMode属性，NCWidgetDisplayModeCompact 表示不支持折叠和展开，只能是折叠模式了，需要设置为&lt;/p&gt;
-
-&lt;pre&gt;
-self.extensionContext.widgetLargestAvailableDisplayMode = NCWidgetDisplayModeExpanded;
-&lt;/pre&gt;
-
-&lt;p&gt;才支持折叠和展开&lt;/p&gt;
-
-&lt;p&gt;最小支持&lt;/p&gt;
-
-&lt;table&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt; &lt;/th&gt;
-      &lt;th&gt;iPhone5&lt;/th&gt;
-      &lt;th&gt;iPhone6&lt;/th&gt;
-      &lt;th&gt;iPhone6 P&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;td&gt;竖屏&lt;/td&gt;
-      &lt;td&gt;304(width,就是两边为8),110(height)&lt;/td&gt;
-      &lt;td&gt;359,110&lt;/td&gt;
-      &lt;td&gt;398,110&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;横屏&lt;/td&gt;
-      &lt;td&gt;420,110&lt;/td&gt;
-      &lt;td&gt;420,110&lt;/td&gt;
-      &lt;td&gt;420,110&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-
-&lt;p&gt;最大支持&lt;/p&gt;
-
-&lt;table&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt; &lt;/th&gt;
-      &lt;th&gt;iPhone5&lt;/th&gt;
-      &lt;th&gt;iPhone6&lt;/th&gt;
-      &lt;th&gt;iPhone6 P&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;td&gt;竖屏&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]，(width)304,(height)528;[通知栏下拉]304,396&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]359,616;[通知栏下拉]359,528&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]398,660;[通知栏下拉]398,572&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;td&gt;横屏&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]420,高度待测试;[通知栏下拉]420,176&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]420,高度待测试;[通知栏下拉]420,220&lt;/td&gt;
-      &lt;td&gt;[锁屏进入]420,352;[通知栏下拉]420,264&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-
-&lt;p&gt;注意的是iOS10 today有三个入口就是，锁屏，iPhone home的第一个tab页面，通知栏下拉，前两个对高度的限制是一样的且会宽松一些，通知栏下拉则对高度限制严格些，一般来说不能超出当前屏幕显示范围。&lt;/p&gt;
-
-&lt;h3 id=&quot;today布局&quot;&gt;today布局&lt;/h3&gt;
-
-&lt;p&gt;today 默认是 storyboard布局的，如果想要使用代码布局。需要把today中Info.plist的&lt;/p&gt;
-
-&lt;pre&gt;
-&amp;lt;key&amp;gt;NSExtension&amp;lt;/key&amp;gt;
-&amp;lt;dict&amp;gt;
-&amp;lt;key&amp;gt;NSExtensionMainStoryboard&amp;lt;/key&amp;gt;
-&amp;lt;string&amp;gt;MainInterface&amp;lt;/string&amp;gt;
-&amp;lt;key&amp;gt;NSExtensionPointIdentifier&amp;lt;/key&amp;gt;
-&amp;lt;string&amp;gt;com.apple.widget-extension&amp;lt;/string&amp;gt;
-&amp;lt;/dict&amp;gt;
-&lt;/pre&gt;
-&lt;p&gt;修改为&lt;/p&gt;
-&lt;pre&gt;
-&amp;lt;key&amp;gt;NSExtension&amp;lt;/key&amp;gt;
-&amp;lt;dict&amp;gt;
-&amp;lt;key&amp;gt;NSExtensionMainStoryboard&amp;lt;/key&amp;gt;
-&amp;lt;string&amp;gt; NSExtensionPointIdentifier&amp;lt;/string&amp;gt;
-&amp;lt;key&amp;gt;NSExtensionPointIdentifier&amp;lt;/key&amp;gt;
-&amp;lt;string&amp;gt;com.apple.widget-extension&amp;lt;/string&amp;gt;
-&amp;lt;/dict&amp;gt;
-&lt;/pre&gt;
-
-&lt;h3 id=&quot;调起app&quot;&gt;调起app&lt;/h3&gt;
-
-&lt;p&gt;通过&lt;/p&gt;
-
-&lt;pre&gt;
-[self.extensionContext openURL:[NSURL URLWithString:urlString] completionHandler:^(BOOL success) { 
-NSLog(@&quot;open url result:%d&quot;,success); 
-}];
-&lt;/pre&gt;
-
-&lt;p&gt;就可以调起app了，&lt;/p&gt;
-
-&lt;p&gt;然后在app端的appdelegate里面下面方法接收。&lt;/p&gt;
-&lt;pre&gt;
-- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(nullable NSString *)sourceApplication annotation:(id)annotation
-
-&lt;/pre&gt;
-&lt;h3 id=&quot;数据共享&quot;&gt;数据共享&lt;/h3&gt;
-
-&lt;p&gt;app 和 today都有各自的空间，但也有共享的空间group。&lt;/p&gt;
-
-&lt;p&gt;通过NSUserDefaults共享数据&lt;/p&gt;
-
-&lt;pre&gt;
-NSUserDefaults *shared = [[NSUserDefaults alloc] initWithSuiteName:@&quot;group.c
-om.xxx&quot;];
-&lt;/pre&gt;
-
-&lt;p&gt;可以通过这个userdefaults读写group的数据，suiteName是需要在capabilities里面配置的，userdefaults和filemanager是共用的。&lt;/p&gt;
-
-&lt;pre&gt;
-NSURL *containerURL = [[NSFileManager defaultManager] containerURLForSecuri
-tyApplicationGroupIdentifier:@&quot;group.com.xxx&quot;]; 
-&lt;/pre&gt;
-
-&lt;p&gt;而NSFileManager则可以通过上面的url进行读写。&lt;/p&gt;
-
-&lt;h3 id=&quot;代码共享&quot;&gt;代码共享&lt;/h3&gt;
-
-&lt;p&gt;如果一个文件需要在today和app内都用的话，则只要.m文件的targetmembership勾选两个就可以了。&lt;/p&gt;
-
-&lt;p&gt;如果 在你的工程里面有自己的其他 framework target。 如果你想用这个target里面文件，则可以在这个target的general里面勾选allow app extension API only。&lt;/p&gt;
-
-&lt;p&gt;如果对于一个类app和extension都可以调用，但是你其中的某些代码块想区分。&lt;/p&gt;
-
-&lt;p&gt;你可以在today target里面添加宏定义 ，Build Settings - Preprocessor Macros下面添加&lt;/p&gt;
-
-&lt;pre&gt;
-TARGET_IS_EXTENSION=1
-&lt;/pre&gt;
-
-&lt;p&gt;使用的话就是&lt;/p&gt;
-
-&lt;pre&gt;
-#ifndef TARGET_IS_EXTENSION
-
-#endif
-&lt;/pre&gt;
-
-&lt;h3 id=&quot;ios-10-支持的设备&quot;&gt;iOS 10 支持的设备&lt;/h3&gt;
-
-&lt;pre&gt;
-iPhone 7
-iPhone 7 Plus
-iPhone 6s
-iPhone 6s Plus
-iPhone 6
-iPhone 6 Plus
-iPhone SE
-iPhone 5s
-iPhone 5c
-iPhone 5
-
-iPad Pro 12.9 英寸
-iPad Pro 9.7 英寸
-iPad Air 2
-iPad Air
-iPad 第四代
-iPad mini 4
-iPad mini 3
-iPad mini 2
-
-iPod touch 第六代
-&lt;/pre&gt;
-
-&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/coderyi/blog/master/other/images/ios10_support_device.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-</description>
-        <pubDate>Mon, 10 Oct 2016 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/posts/ios_10_today/</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/ios_10_today/</guid>
-        
-        <category>iOS10</category>
-        
-        
-        <category>iOS</category>
-        
-      </item>
-    
-      <item>
-        <title>Apple Watch开发的几个小问题</title>
-        <description>&lt;p&gt;20160522&lt;/p&gt;
-
-&lt;h5 id=&quot;q1-如何在调试applewatch的时候对watch程序打断点&quot;&gt;Q1 如何在调试AppleWatch的时候对watch程序打断点&lt;/h5&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;在Xcode的Target选择AppleWatch程序&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;Watch应用启动之后再打开iPhone模拟器中的程序,然后回到Xcode,选择菜单里的Debug-&amp;gt;Attach to Process by PID or name ,填写apple watch extension 的bundle identifier&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;断点就可以生效了&lt;/p&gt;
-
-&lt;h5 id=&quot;q2-watchkit-架构变化&quot;&gt;Q2 WatchKit 架构变化&lt;/h5&gt;
-
-&lt;p&gt;在 watchOS 1 做过开发的人，都应该熟悉如下这张图：&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://7u2mu6.com1.z0.glb.clouddn.com/QQ20151017-4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;如上图所示，在 watchOS 1 上面做开发，Apple Watch 应用程序由两部分构成：Watch App 和 WatchKit 扩展。&lt;/p&gt;
-
-&lt;p&gt;Watch App 是一个运行在 Apple Watch 中的可执行文件。它包括 storyboard 和渲染屏幕时所需的资源文件。&lt;/p&gt;
-
-&lt;p&gt;WatchKit 扩展则是运行在 iPhone 上的可执行文件。包括管理应用程序界面的逻辑代码，以及处理用户的交互操作。&lt;/p&gt;
-
-&lt;p&gt;那么，在 watchOS 2 中，WatchKit 的架构发生了比较重大的变化，我们先来看看下面这张图：&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://7u2mu6.com1.z0.glb.clouddn.com/QQ20151017-5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;从上面的图中，可以很明显地看出，苹果把原来运行在 iPhone 手机上的 WatchKit Extension 移到 Apple Watch 中了。这将直接带来如下改变：原来只存放一些资源和 Storyboard 的 Watch App，现在程序的业务逻辑部分（也就是代码执行部分）也被放到 Watch App 中。这样的话，程序给用户的体验会更好，Watch App 的运行可以完全独立于 iPhone 了。&lt;/p&gt;
-
-&lt;h5 id=&quot;q3-watch-os-1--watch-os-2-获取网络资源的方法&quot;&gt;Q3 watch os 1 &amp;amp; watch os 2 获取网络资源的方法&lt;/h5&gt;
-
-&lt;p&gt;watch os 1主要是通过WKInterfaceController的&lt;/p&gt;
-&lt;pre&gt;
-+ (BOOL)openParentApplication:(NSDictionary *)userInfo reply:(nullable void(^)(NSDictionary * replyInfo, NSError * __nullable error)) reply WK_AVAILABLE_IOS_ONLY(8.2);    // launches containing iOS application on the phone. userInfo must be non-nil
-
-&lt;/pre&gt;
-&lt;p&gt;方法交给iPhone去处理，当iPhone收到消息后在AppDelegate中收到回调&lt;/p&gt;
-&lt;pre&gt;
-- (void)application:(UIApplication *)application handleWatchKitExtensionRequest:(NSDictionary *)userInfo reply:(void (^)(NSDictionary *))reply
-{}
-&lt;/pre&gt;
-&lt;p&gt;到这里后交给NSURLSession或者NSURLConnection处理。&lt;/p&gt;
-
-&lt;p&gt;watch os 2基于watch架构变化后，可以直接由watch发起网络请求，值得注意的是，Apple Watch 2 中还支持 WiFi，所以 Apple Watch 可以通过 WiFi，直接获取一些网络数据等。并且 Apple Watch 无法处理的一些业务，可以通过 WatchConnectivity 框架的WCSession，请求 iPhone 进行处理，并将结果返回给 Apple Watch。&lt;/p&gt;
-
-&lt;h5 id=&quot;q4-apple-watch强退app的方法&quot;&gt;Q4 Apple Watch强退App的方法&lt;/h5&gt;
-
-&lt;p&gt;虽然apple watch的应用没有真正意义上的后台，表冠退出应用以后就不在运行（部分自带应用的检测功能不会退出）了，但下一次启动应用会很快。可是作为一名强迫症十分想关闭后台应用，于是发现一种关闭后台应用的方法：如要完全退出健身应用，&lt;/p&gt;
-
-&lt;p&gt;第一步：进入健身应用界面&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://images.weiphone.net/data/attachment/forum/201505/07/112751r24zbqkjyzq13znl.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;第二步：按住（长按）侧边按钮，出现关机/省电模式界面后松开按钮。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://images.weiphone.net/data/attachment/forum/201505/07/112826ivzav878k77x3xyh.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;第三部：不要管界面内容，再次按住（长按）侧边按钮，大约3秒后应用被完全退出。&lt;/p&gt;
-
-&lt;p&gt;如果再一次打开这个应用可能会需要一点加载时间。&lt;/p&gt;
-
-&lt;h5 id=&quot;q5-wkinterfacecontroller的生命周期&quot;&gt;Q5 wkinterfacecontroller的生命周期&lt;/h5&gt;
-
-&lt;p&gt;watch app是Page-Based，可以左右滑动，假设有三个interfacecontroller，刚启动的时候，它们大概是下面这样运行&lt;/p&gt;
-
-&lt;pre&gt;
-2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController init]
-2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController awakeWithContext:]
-2016-05-18 18:58:48.793 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController init]
-2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController awakeWithContext:]
-2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController init]
-2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController awakeWithContext:]
-2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController willActivate]
-2016-05-18 18:58:48.794 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController didAppear]
-2016-05-18 18:58:49.297 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController willActivate]
-2016-05-18 18:58:49.298 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController didDeactivate]
-
-&lt;/pre&gt;
-
-&lt;p&gt;由InterfaceController滑动到RepositoryInterfaceController之后&lt;/p&gt;
-
-&lt;pre&gt;
-
-
-2016-05-18 19:01:31.941 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController willDisappear]
-2016-05-18 19:01:31.941 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController willActivate]
-2016-05-18 19:01:31.942 MonkeyForWatch WatchKit Extension[13295:382024] -[InterfaceController didDeactivate]
-2016-05-18 19:01:31.942 MonkeyForWatch WatchKit Extension[13295:382024] -[RepositoryInterfaceController didAppear]
-2016-05-18 19:01:32.445 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController willActivate]
-2016-05-18 19:01:37.710 MonkeyForWatch WatchKit Extension[13295:382024] -[SettingInterfaceController didDeactivate]
-
-
-&lt;/pre&gt;
-
-&lt;h5 id=&quot;q6-wkinterfacetable如何使用&quot;&gt;Q6 WKInterfaceTable如何使用&lt;/h5&gt;
-
-&lt;p&gt;首先需要storyboard中建立表以及自定义的row，下面是初始化表视图，SettingRow是一个NSObject对象。&lt;/p&gt;
-
-&lt;pre&gt;
-- (void)initTable
-{
-    [self.settingTable setNumberOfRows:2 withRowType:NSStringFromClass([SettingRow class])];
-    
-    for (NSInteger i=0; i&amp;lt;2; i++) {
-        SettingRow *elementRow = (SettingRow *)[self.settingTable rowControllerAtIndex:i];
-        [elementRow.titleLabel setText:[NSString stringWithFormat:@&quot;%@ 设置开发语言&quot;,@(i)]];
-    }
-}
-&lt;/pre&gt;
-
-&lt;p&gt;table的点击事件则需要复写WKInterfaceController的方法&lt;/p&gt;
-&lt;pre&gt;
-- (void)table:(WKInterfaceTable *)table didSelectRowAtIndex:(NSInteger)rowIndex;  // row selection if controller has WKInterfaceTable property
-{
-    if (rowIndex==0) {
-        [self presentControllerWithName:NSStringFromClass([LanguageListInterfaceController class]) context:nil];
-    }
-}
-&lt;/pre&gt;
-
-&lt;h5 id=&quot;q7-三种交互方式&quot;&gt;Q7 三种交互方式&lt;/h5&gt;
-
-&lt;p&gt;Apple Watch将会有三种交互方式：主屏幕下，佩戴者可以看到所有的Watch app，用户点击后就可以直接启动相应app；第二种交互方式被称做“Glance”，该界面下不含按钮，也不可滑动，用户只能够进行快速阅读，内容将只有一屏空间。开发者可以定制该界面，用户点击后即会启动相应app。第三种交互方式是通知提醒的定制操作。当iPhone上的通知推送至Apple Watch上显示后，当用户点击后就可以进入更详细的信息显示页面，开发者可以对该界面进行定制。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://cdn.pingwest.com/wp-content/uploads/2014/11/WatchKit.jpg?imageView2/2/w/750/q/90&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;h5 id=&quot;q8-兼容ios6的问题&quot;&gt;Q8 兼容iOS6的问题&lt;/h5&gt;
-
-&lt;p&gt;在iOS6的机器上运行，我发现了一下问题，&lt;/p&gt;
-
-&lt;pre&gt;
-dyld: Library not loaded: /System/Library/Frameworks/WatchKit.framework/WatchKit
-Referenced from: /var/mobile/Applications/xxxx/xxx.app/xxx
-Reason: image not found
-(lldb) 
-&lt;/pre&gt;
-
-&lt;p&gt;因为watchkit.framework 在iOS 6上是不存在的，所以才会有上面的错误，这时需要在build phases里把watchkit.framework从Required（添加framework默认为此）改为optional。&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://www.cnblogs.com/wanyakun/p/3494323.html&quot;&gt;iOS开发 .framework的Optional(弱引用)和Required(强引用)区别&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://jerryliu.org/ios%20programming/Apple%20Watch-Development-summary/&quot;&gt;Apple Watch三个月开发的一些收获总结&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://beyondvincent.com/2015/10/16/2015-10-16-watchkit-for-watchos-2/&quot;&gt;watchOS 2&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;http://bbs.feng.com/read-htm-tid-9101476.html&lt;/p&gt;
-
-&lt;p&gt;https://developer.apple.com/library/ios/samplecode/Lister/Introduction/Intro.html&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://wiki.jikexueyuan.com/project/apple-watch-programming-guide/&quot;&gt;Apple Watch 编程指南（中文版）－极客学院&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;http://www.cocoachina.com/applewatch/&quot;&gt;Apple Watch开发专题&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/ipader/SwiftGuide/tree/master/Apple%20Watch&quot;&gt;Apple Watch 指南-github&lt;/a&gt;&lt;/p&gt;
-</description>
-        <pubDate>Sun, 22 May 2016 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/posts/AppleWatch/</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/AppleWatch/</guid>
-        
-        <category>AppleWatch</category>
         
         
         <category>iOS</category>
@@ -2619,6 +2243,8 @@ initError:
 
 &lt;h2 id=&quot;reference&quot;&gt;Reference&lt;/h2&gt;
 
+&lt;p&gt;&lt;a href=&quot;https://github.com/coderyi/Eleven&quot;&gt;ElevenPlayer&lt;/a&gt;: 这是我用ffmpeg写的iOS万能播放器。&lt;/p&gt;
+
 &lt;p&gt;&lt;a href=&quot;http://cnbin.github.io/blog/2015/05/19/iospei-zhi-ffmpegkuang-jia/&quot;&gt;iOS配置FFmpeg框架&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&quot;https://zh.wikipedia.org/wiki/FFmpeg&quot;&gt;FFmpeg-wikipedia&lt;/a&gt;&lt;/p&gt;
@@ -2650,149 +2276,1004 @@ initError:
       </item>
     
       <item>
-        <title>大圣归来一些感想</title>
-        <description>&lt;p&gt;这是一部视觉和内容上很好的动画片，《西游记之大圣归来》加上《秦时明月》是目前我认为国产动画中的很好的两个。今天在电影院看到它的时候很激动，很久没有看到这么好的电影。&lt;/p&gt;
+        <title>iOS与Android的音频互通</title>
+        <description>&lt;p&gt;2015-06-08&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://img31.mtime.cn/pi/2015/04/22/112758.49985889_1000X1000.jpg&quot; width=&quot;500&quot; height=&quot;281&quot; alt=&quot;图片&quot; align=&quot;center&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;音频的基本知识&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
 
-&lt;h3 id=&quot;为什么是西游&quot;&gt;为什么是西游&lt;/h3&gt;
+&lt;p&gt;声音是波的一种，频率和振幅是描述波的重要属性，频率的大小与我们通常所说的音高对应，而振幅影响声音的大小。频率的单位是赫兹，赫兹是电、磁、声波和机械振动周期循环时频率的单位，即每秒的周期次数(周期/秒)。对于声音，人类的听觉范围为20Hz～20000Hz，低于这个范围叫做次声波，高于这个范围的叫做超声波。&lt;/p&gt;
 
-&lt;p&gt;中国动画我觉得一直很平庸，西游是中国的经典故事，并且西游在很长一段时间伴随很多人的童年。&lt;/p&gt;
+&lt;p&gt;数码录音最关键一步就是要把模拟信号转换为数码信号，就电脑而言是把模拟声音信号录制成为音频文件。&lt;/p&gt;
 
-&lt;p&gt;“猴哥猴哥 你真了不得”，猴哥就是我们童年的英雄，紧箍咒再念没改变老孙的本色,拔一根毫毛吹出猴万个，眨一眨眼皮能把鬼识破， 翻个跟斗十万八千里，抖一抖威风山崩地也裂。&lt;/p&gt;
+&lt;p&gt;描述音频文件主要有两个指标，一个是采样频率，或称采样率、采率，另一个是采样精度也就是比特率。&lt;/p&gt;
 
-&lt;p&gt;“悄悄问圣僧，女儿美不美，女儿美不美”，爱情面前，理想也曾有那么一丝动摇。&lt;/p&gt;
+&lt;p&gt;采样，指把时间域或空间域的连续量转化成离散量的过程。每秒钟的采样样本数叫做采样频率。采样频率越高，数字化后声波就越接近于原来的波形，即声音的保真度越高，但量化后声音信息量的存储量也越大，而人的耳朵已经很难分辨。根据采样定理，只有当采样频率高于声音信号最高频率的两倍时，才能把离散模拟信号表示的声音信号唯一地还原成原来的声音。我们最常用的采样频率是44.1kHz，它的意思是每秒取样44100次。&lt;/p&gt;
 
-&lt;p&gt;也伴随着少男少女们的青春，“曾经有一份真挚的爱情摆在我面前”，征途面对世俗的无奈。&lt;/p&gt;
+&lt;p&gt;比特率是指每秒传送的比特(bit)数，单位为 bps(Bit Per Second)。比特率越高，传送数据速度越快。声音中的比特率是指将模拟声音信号转换成数字声音信号后，单位时间内的二进制数据量。比特率其实就是表示振幅，比特率越大，能够表示声音的响度越清晰。&lt;/p&gt;
 
-&lt;p&gt;国产动画在西游上找突破点是良性的。要想成为经典，首先突破经典，很多人在西游题材上，惧怕《西游记》这部伟大的小说，在故事情节、内容上不敢有大动作。所以如果在西游上突破，可能会是一部好的片子，就像之前的《大话西游》。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;iOS音频的基础&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
 
-&lt;h3 id=&quot;英雄&quot;&gt;英雄&lt;/h3&gt;
+&lt;p&gt;接着我们要整体了解下iOS为我们提供处理音频的基础技术，核心音频（Core Audio）。&lt;/p&gt;
 
-&lt;p&gt;《大圣归来》是一个英雄主题，不是美国的超级英雄，而是一个人的自我突破。一个人在救了别人的同时必定自我也实现了突破，可以我说自我完整也就驾驭了整个世界。&lt;/p&gt;
+&lt;p&gt;Core Audio 是IOS和 MAC 的关于数字音频处理的基础，它提供应用程序用来处理音频的一组软件框架，所有关于IOS音频开发的接口都是由Core Audio来提供或者经过它提供的接口来进行封装的，按照官方的说法是集播放，音频处理录制为一体的专业技术，通过它我们的程序可以同时录制，播放一个或者多个音频流，自动适应耳机，蓝牙耳机等硬件，响应各种电话中断，静音，震动等，甚至提供3D效果的音乐播放。&lt;/p&gt;
 
-&lt;p&gt;《大圣归来》中有两次突破自我的高潮，一次是小姑娘被妖王混沌抓走，悟空沉入水中萎靡不振。溺水的过程是美妙的，落入水中，看见金色的天空，柔和的阳光，波光粼粼的水面，充满了美好的事物。悟空在这个时候回顾了江流儿对他的鼓励，于是鼓起了勇气开始了新的征程。&lt;/p&gt;
+&lt;p&gt;Core Audio有5个框架：1.Core Audio.framework，2.AudioToolbox.framework，3.AudioUnit.framework ，4.AVFoundation.framework，5.OpenAL.framework。&lt;/p&gt;
 
-&lt;p&gt;第二次自我突破，在《大圣归来》中是真正地自我突破，伴随而来也就突破外面世界的束缚，佛祖给它的封印不过是束缚的假象。当江流儿死了，情感的爆发激起了他的自我实现。这是一个很好的东西，但是我觉得不足之处在于，没有足够深化江流儿与悟空的关系，爱情、父子、伯牙子期、师徒、大爱。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://blog.csdn.net/GooHong/article/details/28911301&quot;&gt;参考:iOS框架和服务&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;https://mag.moe/wp-content/uploads/2015/06/%E3%80%8A%E8%A5%BF%E6%B8%B8%E8%AE%B0%E4%B9%8B%E5%A4%A7%E5%9C%A3%E5%BD%92%E6%9D%A5%E3%80%8B%E8%BF%98%E6%9C%AA%E4%B8%8A%E6%98%A0%E5%A5%BD%E8%AF%84%E5%A6%82%E6%BD%AE-520x400.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Core Audio.framework并不提供服务，仅提供其他框架可以使用的头文件和数据类型。这其中AVFoundation 框架 (AVFoundation.framework)提供一组播放、记录和管理声音和视频内容的Objective-C类，因此下面我就简单介绍一下他就可以了。&lt;/p&gt;
 
-&lt;h3 id=&quot;突破&quot;&gt;突破&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;AVFoundation的录音和播放&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;首先电影的特效不错，在一定程度上还是秒杀了国内所谓的3D片。其实另外一个的话就是在西游的内容上有一定的突破。
-我觉得妖王的角色塑造地比较成功，脸应该是借鉴了京剧的脸谱，另外可能有点像《千与千寻》中无脸男，我觉得《大圣归来》可能受到了宫崎骏的影响，不过我觉得《大圣归来》在模仿上是成功的。妖王在电影中有三个造型是不错的，一个是书生造型，一个散发之后，另外一个是现出原形后大肉虫的造型。&lt;/p&gt;
+&lt;p&gt;音频的录制与播放主要和三个类有关AVAudioSession，AVAudioRecorder，AVAudioPlayer。&lt;/p&gt;
 
-&lt;p&gt;小白龙，龙的形象是比较不错的，很多影视剧里面龙的形象感觉都很粗糙。在白龙飞的时候表现出了一定的意境，让人的心也跟着飞起来，唯一一个让我吐槽的是，怎么会有汪峰的歌，一下子拉低《大圣归来》的档次，另外有一点像《千与千寻》中白龙。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;AVAudioSession&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;片中对《西游记》故事情节的改编还是比较成功的，另外它有几个长镜头做得很不错。&lt;/p&gt;
+&lt;p&gt;AVAudioSession类由AVFoundation框架引入，每个iOS应用都有一个音频会话，这个会话可以被AVAudioSession类的sharedInstance类方法访问，如下：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; style=&quot;background: #E8F2FB;&quot;&gt;AVAudioSession *audioSession = [AVAudioSession sharedInstance];&lt;/pre&gt;
 
-&lt;p&gt;最后说说悟空这个角色，造型好，性格设置不一样，五行山出场有特色，但是还是不够大胆，没有表现出该有的人性，并且有一些受制于小说《西游记》。&lt;/p&gt;
+&lt;p&gt;在获得一个AVAudioSession类的实例后，你就能通过调用音频会话对象的setCategory:error:实例方法，来从IOS应用可用的不同类别中作出选择。&lt;/p&gt;
 
-&lt;p&gt;###《机器人总动员》的遐想，如果没有对白，没有声音&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;AVAudioRecorder&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;《机器人总动员》中对白是很少的，这让我印象深刻，回荡在我耳边的一直是那句简单的“EWA，EWA，EWA……”。&lt;/p&gt;
+&lt;p&gt;在使用AVAudioRecorder进行音频录制的时候，需要设置一些参数，下面就是参数的说明，并且写下了音频录制的代码：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; style=&quot;background: #E8F2FB;&quot;&gt;//音频开始录制
+- (void)startRecordWithFilePath:(NSString *)path{
+    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error:nil];
+    [[AVAudioSession sharedInstance] setActive:YES error:nil];
 
-&lt;h3 id=&quot;悲剧是艺术的高级形式甚至是巅峰&quot;&gt;悲剧是艺术的高级形式甚至是巅峰&lt;/h3&gt;
+    /**
+     *
+     AVFormatIDKey  音乐格式，这里采用PCM格式
+     AVSampleRateKey 采样率
+     AVNumberOfChannelsKey 音乐通道数
+     AVLinearPCMBitDepthKey,采样位数 默认 16
+     AVLinearPCMIsFloatKey,采样信号是整数还是浮点数
+     AVLinearPCMIsBigEndianKey,大端还是小端 是内存的组织方式
+     AVEncoderAudioQualityKey,音频编码质量
 
-&lt;p&gt;尼采曾经说过：“悲剧历来被看做是艺术的高级形式乃至巅峰”，悲剧不一定是所谓的悲剧性的结尾。《机器人总动员》在我心中是动画片中的冠军。它的悲的地方我可能觉得有两个，一个地球的荒凉，它在人类的生存环境上刻画地发人深思。另外一个，在结尾处，EWA在挽救WALLE的那一段扣人心弦。&lt;/p&gt;
+     */
 
-&lt;p&gt;《大话西游》在结局上紫霞仙子和至尊宝也分开，至尊宝踏上了西天取经的道路。西游的故事中，大闹天宫是最精彩的一段，其实后面的取经八十一难是很不愿意看，但正是违背了悟空这个角色的设定，才让人回味无穷。&lt;/p&gt;
+    NSDictionary *recordSetting = @{
+                                    AVFormatIDKey               : @(kAudioFormatLinearPCM),
+                                    AVSampleRateKey             : @(8000.f),
+                                    AVNumberOfChannelsKey       : @(1),
+                                    AVLinearPCMBitDepthKey      : @(16),
+                                    AVLinearPCMIsNonInterleaved : @NO,
+                                    AVLinearPCMIsFloatKey       : @NO,
+                                    AVLinearPCMIsBigEndianKey   : @NO
+                                    };
 
-&lt;p&gt;最后，我觉得《西游记之大圣归来》真的是一部非常不错的动画电影，值得去看。&lt;/p&gt;
+    //初始化录音
+    self.recorder = [[AVAudioRecorder alloc]initWithURL:[NSURL URLWithString:path]
+                                                settings:recordSetting
+                                                   error:nil];
+    _recorder.delegate = self;
+    _recorder.meteringEnabled = YES;
 
-&lt;p&gt;预告片地址：&lt;a href=&quot;http://movie.douban.com/trailer/179848/#content&quot;&gt;《西游记之大圣归来》&lt;/a&gt;&lt;/p&gt;
+    [_recorder prepareToRecord];
+    [_recorder record];
+}
 
-&lt;p&gt;文章未经授权不能有商业用途，转载请付原文链接：https://github.com/coderyi/blog/blob/master/articles/2015/0713_MonkeyKing.md&lt;/p&gt;
+//音频停止录制
+- (void)stopRecord
+{
+
+    [self.recorder stop];
+    self.recorder = nil;
+
+}
+&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;AVAudioPlayer&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;AVAudioPlayer类是音频播放的类，一个AVAudioPlayer只能播放一个音频，如果你想混音你可以创建多个AVAudioPlayer实例，每个相当于混音板上的一个轨道，下面就是音频播放的方法。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; style=&quot;background: #E8F2FB;&quot;&gt;//音频开始播放
+
+- (void)startPlayAudioFile:(NSString *)fileName{
+    //初始化播放器
+    player = [[AVAudioPlayer alloc]init];
+
+    player = [player initWithContentsOfURL:[NSURL URLWithString:fileName] error:nil];
+    self.player.delegate = self;
+    [player play];
+
+
+}
+
+//音频停止播放
+- (void)stopPlay{
+    if (self.player) {
+        [self.player stop];
+        self.player.delegate = nil;
+        self.player = nil;
+    }
+}
+&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;转码&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;上面我们用iOS录制了一个音频文件，并且录制成了wav格式，然而现在的情况确实安卓不支持wav格式，并且苹果的格式安卓全不支持，看好是全不，不是全部，反过来安卓的格式，苹果基本也不支持。&lt;/p&gt;
+
+&lt;p&gt;这里可以让服务器去转码，不过服务器的压力会增加，这里我们可以让客户端进行转码。amr格式的音频文件是安卓系统中默认的录音文件，也算是安卓支持的很方便的音频文件，这里就把iOS录制的wav文件转成amr，我们采用的是libopencore框架。
+关于libopencore，&lt;a title=&quot;Jeans&quot; href=&quot;http://my.oschina.net/jeans&quot;&gt;Jeans&lt;/a&gt;有对它进行了一个比较好的Demo，大家可以参考他的Demo，&lt;a title=&quot;iOS音频格式AMR和WAV互转（支持64位）&quot; href=&quot;http://www.oschina.net/code/snippet_562429_12400&quot;&gt;iOS音频格式AMR和WAV互转（支持64位）&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;在他的AmrWavConverter代码Demo里面有掩饰这两个转码工作。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; style=&quot;background: #E8F2FB;&quot;&gt;//转换amr到wav
++ (int)ConvertAmrToWav:(NSString *)aAmrPath wavSavePath:(NSString *)aSavePath{
+
+    if (! DecodeAMRFileToWAVEFile([aAmrPath cStringUsingEncoding:NSASCIIStringEncoding], [aSavePath cStringUsingEncoding:NSASCIIStringEncoding]))
+        return 0;
+
+    return 1;
+}
+
+//转换wav到amr
++ (int)ConvertWavToAmr:(NSString *)aWavPath amrSavePath:(NSString *)aSavePath{
+
+    if (! EncodeWAVEFileToAMRFile([aWavPath cStringUsingEncoding:NSASCIIStringEncoding], [aSavePath cStringUsingEncoding:NSASCIIStringEncoding], 1, 16))
+        return 0;
+
+    return 1;
+}
+&lt;/pre&gt;
+&lt;p&gt;转载请附原文地址&lt;a title=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md&quot; href=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md&quot;&gt;https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md&lt;/a&gt; 。&lt;/p&gt;
 </description>
-        <pubDate>Mon, 13 Jul 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/posts/MonkeyKing/</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/MonkeyKing/</guid>
+        <pubDate>Mon, 08 Jun 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/iOS_android_audio/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/iOS_android_audio/</guid>
+        
+        <category>音视频</category>
         
         
-        <category>life</category>
+        <category>iOS</category>
         
       </item>
     
       <item>
-        <title>WWDC 2015－Swift开源,支持 iOS,OS X ,Linux</title>
-        <description>&lt;p&gt;2015-06-09&lt;/p&gt;
+        <title>iOS的SQLite简单使用</title>
+        <description>&lt;p&gt;2015-01-16&lt;/p&gt;
 
-&lt;p&gt;OS X、iOS 和 watchOS&lt;/p&gt;
+&lt;p&gt;SQLite，是一款轻型的数据库，是遵守ACID的关系型数据库管理系统，它的设计目标是嵌入式的，而且目前已经在很多嵌入式产品中使用了它，它占用资源非常的低，在嵌入式设备中，可能只需要几百K的内存就够了。它能够支持Windows/Linux/Unix等等主流的操作系统，同时能够跟很多程序语言相结合，比如 Tcl、C#、PHP、Java等，还有ODBC接口，同样比起Mysql、PostgreSQL这两款开源的世界著名数据库管理系统来讲，它的处理速度比他们都快。SQLite第一个Alpha版本诞生于2000年5月。 至今已经有14个年头，SQLite也迎来了一个版本 SQLite 3已经发布。&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;OS X El Capitan&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;SQLite的特性&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;ACID事务&lt;br /&gt;ACID，是指在可靠数据库管理系统（DBMS）中，事务(transaction)所应该具有的四个特性：原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）. 原子性意味着数据库中的事务执行是作为原子。即不可再分，整个语句要么执行，要么不执行。一致性指数据库事务不能破坏关系数据的完整性以及业务逻辑上的一致性。例如对银行转帐事务，不管事务成功还是失败，应该保证事务结束后ACCOUNTS表中Tom和Jack的存款总额为2000元。事务的隔离性是多个用户并发访问数据库时，数据库为每一个用户开启的事务，不能被其他事务的操作数据所干扰，多个并发事务之间要相互隔离。持久性是指一个事务一旦被提交，它对数据库中数据的改变就是永久性的，接下来即使数据库发生故障也不应该对其有任何影响。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;零配置 – 无需安装和管理配置&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;储存在单一磁盘文件中的一个完整的数据库&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;数据库文件可以在不同字节顺序的机器间自由的共享&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;支持数据库大小至2TB&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;足够小, 大致13万行C代码, 4.43M&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;比一些流行的数据库在大部分普通数据库操作要快&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;简单, 轻松的API&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;包含TCL绑定, 同时通过Wrapper支持其他语言的绑定&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;良好注释的源代码, 并且有着90%以上的测试覆盖率&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;独立，没有额外依赖&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;源码完全的开源, 你可以用于任何用途, 包括出售它&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;支持多种开发语言,C, PHP, Perl, Java, C#,Python, Ruby&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
 
-&lt;p&gt;OS X El Capitan 为新发布的Mac系统，Craig 介绍了OS X El Capitan 的 Spotlight、Split View、窗口管理等众多新功能。OS X El Capitan的El是小写L，不是大写i，也不是1。查了维基发现，El Capitan是Yosemite国家公园里面的一座山，具体看&lt;a href=&quot;http://en.wikipedia.org/wiki/El_Capitan&quot; title=&quot;El_Capitan wiki&quot;&gt;El_Capitan wiki&lt;/a&gt;。&lt;/p&gt;
+&lt;h3&gt;SQLite在iOS中的基本使用&lt;/h3&gt;
 
-&lt;p&gt;Metal&lt;/p&gt;
+&lt;p&gt;在iOS开发中可以用一些SQLite数据库管理工具，例如SQLiteManager。&lt;/p&gt;
 
-&lt;p&gt;Metal 是一种核心图像处理技术，让各种 App 都能更快捷地访问图形处理器。这将为整个系统带来更快更高效的图像渲染性能。&lt;/p&gt;
+&lt;p&gt;接下来就通过代码来讲述iOS中如何使用sqlite&lt;/p&gt;
 
-&lt;p&gt;Mac 上的 Metal 技术提升了游戏类和很多App 的图像逼真度及细节表现力。iOS 9 配备的各种内置 App 也充分利用了 Metal 技术的优势，将呈现更灵敏的页面滚动、更生动流畅的动画及更出色的总体性能表现。&lt;/p&gt;
+&lt;p&gt;sqlite.h文件的引入&lt;/p&gt;
 
-&lt;p&gt;更优化的使用体验、更快的性能表现：这就是 OS X El Capitan。&lt;/p&gt;
+&lt;p&gt;首先是打开和关闭数据库，打开和创建数据库都是sqlite3_open函数，如果filename已经创建那就是打开。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; escaped=&quot;true&quot; style=&quot;background: #E8F2FB ;&quot;&gt;
+NSString *filename;//数据库文件路径
+sqlite3 *database; //sqlite3数据库句柄的指针
+//打开数据库
+- (int) open{
+    int rc=sqlite3_open([filename UTF8String], &amp;amp;database);
+    if (rc) {
+        sqlite3_close(database);
+        NSLog(@&quot;open database failed&quot;);
+    }
+    return rc;
+}
+//关闭数据库
+- (void) close{
+    if (database!=NULL) {
+        sqlite3_close(database);
+    }
+}
+&lt;/pre&gt;
+&lt;p&gt;接下来插入、删除、更新都是用sqlite3_exec函数，记住执行语句，必须要先打开数据库，完成之后需要关闭数据库。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; escaped=&quot;true&quot; style=&quot;background: #E8F2FB ;&quot;&gt;
+//执行 insert,update,delete 等非查询SQL语句
+ - (int)executeNonQuery:(NSString *)sql error:(NSError **)error {
+     int rc;
+     char *errmsg;
+     rc = [self open];
+     if (rc) {
+//错误处理
+     if (error != NULL) {
+         NSDictionary *eDict =
+         [NSDictionary dictionaryWithObject:@&quot;open database failed&quot;
+         forKey:NSLocalizedDescriptionKey];
+         *error =
+         [NSError errorWithDomain:kSqliteErrorDomain code:rc userInfo:eDict];
+     }
+     return rc;
+ }
+     rc = sqlite3_exec(database, [sql UTF8String], NULL, NULL, &amp;amp;errmsg);
+     if (rc != SQLITE_OK) {
+         if (error != NULL) {
+             NSDictionary *eDict =
+             [NSDictionary dictionaryWithObject:@&quot;exec sql error&quot;
+             forKey:NSLocalizedDescriptionKey];
+             *error =
+             [NSError errorWithDomain:kSqliteErrorDomain code:rc userInfo:eDict];
+         }
+         NSLog(@&quot;%s&quot;, errmsg);
+         sqlite3_free(errmsg);
+     }
+     [self close];
+     return rc;
+ }&lt;/pre&gt;
+&lt;p&gt;上面函数中sqlite3_free就是释放存放错误信息的内存空间。
+查询操作会略显复杂，同样需要有开关数据库的操作，不过有一个准备结果集和最后释放结果集的操作，分别是sqlite3_prepare_v2和sqlite3_finalize，sqlite3_stmt就是结果集，下面就是具体操作。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; escaped=&quot;true&quot; style=&quot;background: #E8F2FB ;&quot;&gt;[self open];
+ // 查
+ strsql = &quot;select * from users&quot;;
+ // SQLITE_API int sqlite3_prepare_v2(
+ // sqlite3 *db, /* Database handle */
+ // const char *zSql, /* SQL statement*/
+ // int nByte, /* 结果集的最大长度。*/
+ // sqlite3_stmt **ppStmt, /* OUT: 结果集 */
+ // const char **pzTail /* OUT:指向结果集没有用到的内存部分的指针。 */
+ // );
+ sqlite3_stmt* rc;//陈述式句柄
+ if (sqlite3_prepare_v2(db, strsql, -1, &amp;amp;rc, NULL)!=SQLITE_OK) {
+ }
+ // sqlite3_step讲结果集数据指针指向下一个元素。
+ // 这个函数的返回值如果是SQLITE_ROW就表示我们的结果集里面有数据。
+ // 否则我们的结果集就是空的。
+ while (sqlite3_step(rc)==SQLITE_ROW) {
+ // sqlite3_column系列函数。一般有两个输入参数。第一个是结果集指针，第二是数据所在列的序号。
+ // 比如我们现在用的sqlite3_column_int和sqlite3_column_text。
+    printf(&quot;id:%d | username:%s | password:%s \n&quot;,sqlite3_column_int(rc,               0),sqlite3_column_text(rc, 1),sqlite3_column_text(rc, 2));
 
-&lt;p&gt;面向开发人员的 beta 版 OS X El Capitan 于今天推出，而面向公众的 beta 版将于今夏推出。正式版OS X El Capitan 将于今秋正式推出，让全球用户都可免费使用。&lt;/p&gt;
+ }
+ // 查完后一定要释放结果集。
+ sqlite3_finalize(rc);
+ [self close];&lt;/pre&gt;
+&lt;h3&gt;数据库加密&lt;/h3&gt;
 
-&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;iOS 9&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;免费版的SQLite有一个致命缺点：不支持加密。这就导致存储在SQLite中的数据可以被任何人用任何文本编辑器查看到。&lt;/p&gt;
 
-&lt;p&gt;iOS 9 让整个系统变得更为智能；它优化了你常用的各种 App，与 iPad 的整合也将更为完善。&lt;/p&gt;
+&lt;p&gt;对数据库加密的思路有两种：&lt;/p&gt;
 
-&lt;p&gt;iOS 9 推出主动助理 (Proactive Assistant) 功能，并且公布了相关的API。
-接下来Jennifer Bailey聊了聊 Apple Pay的事情，一个是Apple Pay 7 月起将登陆英国；另一个，Apple Pay 让 Passbook App 的内容变得更为丰富，因此 Passbook 也有了一个新名字：Wallet。&lt;/p&gt;
+&lt;p&gt;1.将内容加密后再写入数据库&lt;/p&gt;
 
-&lt;p&gt;iOS 9 的备忘录 App 经过了重新设计，功能变得更为强大。你可以从备忘录里直接启用相机来添加照片或者直接动动手指来画张草图。简单说，notes 进化成 evernote 了。&lt;/p&gt;
+&lt;p&gt;这种方式使用简单，在入库/出库只需要将字段做对应的加解密操作即可，一定程度上解决了将数据赤裸裸暴露的问题。
+不过这种方式并不是彻底的加密，因为数据库的表结构等信息还是能被查看到。另外写入数据库的内容加密后，搜索也是个问题。&lt;/p&gt;
 
-&lt;p&gt;iOS 9 带来了一个全新的 App， News App。News App 将你所关注的新闻，都送到了你的手边。新闻聚合 App 的强劲对手来了……&lt;/p&gt;
+&lt;p&gt;2.对数据库文件加密&lt;/p&gt;
 
-&lt;p&gt;Craig Federighi 讲解了 iPad 上的 iOS 9 上的一些新东西。&lt;/p&gt;
+&lt;p&gt;将整个数据库整个文件加密，这种方式基本上能解决数据库的信息安全问题。目前已有的SQLite加密基本都是通过这种方式实现的。这里就介绍一个开源的加密工具SQLCipher，安装方法可以参照官网文档，&lt;a href=&quot;https://www.zetetic.net/sqlcipher/ios-tutorial/&quot; title=&quot;https://www.zetetic.net/sqlcipher/ios-tutorial/&quot;&gt;https://www.zetetic.net/sqlcipher/ios-tutorial/&lt;/a&gt;，SQLCipher使用256-bit AES加密，由于其基于免费版的SQLite，主要的加密接口和SQLite是相同的，但也增加了一些自己的接口。&lt;/p&gt;
 
-&lt;p&gt;iOS 9 带来了全新的多任务处理功能和工具，让你能开开心心地一心多用。Slide Over 功能让你在不离开当前 App 的同时就能打开第二个 App。有了 Split View 功能，两个 App 能在同一屏幕上，同时开启、并行运作。Picture in Picture 功能可以缩小视频的尺寸，让你在回邮件的同时还能看视频节目。&lt;/p&gt;
+&lt;p&gt;其实SQLite的两个加密函数使用起来非常的简单，下面分情况说明：&lt;/p&gt;
 
-&lt;p&gt;Picture in Picture、Slide Over 和 Split View 功能，都将对开发人员开放 API，iOS 9 将为开发人员提供众多全新的 API。&lt;/p&gt;
+&lt;p&gt;1 给一个未加密的数据库添加密码：如果想要添加密码，则可以在打开数据库文件之后，关闭数据库文件之前的任何时刻调用sqlite3_key函数即可，该函数有三个参数，其中第一个参数为数据库对象，第二个参数是要设定的密码，第三个是密码的长度。例如：sqlite3_key(db,”1q2w3e4r”,8); //给数据库设定密码1q2w3e4r&lt;/p&gt;
 
-&lt;p&gt;App Store 现在有超过 15,000 个 App 是用 Swift 来开发的。Swift 不仅提高了性能，还拥有各种全新功能，来帮你提高效率。Swift 是 iOS 和 OS X 的底层开发语言，它为编写各种精彩 APP 带来了无限可能。&lt;/p&gt;
+&lt;p&gt;2 读取一个加密数据库中的数据：完成这个任务依然十分简单，你只需要在打开数据库之后，再次调用一下sqlite3_key函数即可，例如，数据库密码是123456时，你只需要在代码中加入sqlite3_key(db,”123456”,6);&lt;/p&gt;
 
-&lt;p&gt;下面是Swift爆出了WWDC 2015最大的新闻，在今年晚些时候，Swift 会开放源代码，对 iOS、OS X 和 Linux 都适用。&lt;/p&gt;
+&lt;p&gt;3更改数据库密码：首先你需要使用当前的密码正确的打开数据库，之后你可以调用sqlite3_rekey(db,”112233”,6) 来更改数据库密码。&lt;/p&gt;
 
-&lt;p&gt;在TIOBE 2015年6月编程语言排行榜中，Objective-C是4.339%，第5名，Swift是1.440%,第14名。在过去一年中，Objective-C下降了6.6%，Swift上升了1.44%，按照这种趋势，再加上open source这个大新闻，感觉今年Swift就得超过Objective-C了，看来我得转战Swift了，哈哈！&lt;/p&gt;
+&lt;p&gt;4 删除密码：也就是把数据库恢复到明文状态。这时你仍然只需要调用sqlite3_rekey函数，并且把该函数的第二个参数置为NULL或者”“,或者把第三个参数设为0。&lt;/p&gt;
 
-&lt;p&gt;面向开发人员的 beta 版 iOS 9 于今天推出，面向公众的 beta 版将于 7 月推出。iOS 9 将于今秋正式推出。&lt;/p&gt;
+&lt;h3&gt;事务操作&lt;/h3&gt;
 
-&lt;p&gt;iOS 升级包只有 1.3G，这样 16GB 版本的设备也能轻松升级了，并且我得说4S很坚强，很能升级。&lt;/p&gt;
+&lt;p&gt;那么问题又来了，如果iOS的sqlite同时插入或者查询10000条数据，你该怎么办？&lt;/p&gt;
 
-&lt;p&gt;很难想象，App Store 推出才仅仅 7 年。App Store 已累计让开发人员收获超过 300 亿美金。所有 App 的下载量已经超过了 100,000,000,000 次！&lt;/p&gt;
+&lt;p&gt;这里有三步要做，第一，减少开关数据库操作，插入10000条数据，不能开关10000次数据库，只能进行一次开关；&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;watchOS 2&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;第二，就是不能放在主线程；&lt;/p&gt;
 
-&lt;p&gt;在此之前，Apple Watch 上许多的 app 需要借助 iPhone 来运行；而有了 watchOS 2，它们就能完全在 Apple Watch 上运行了。&lt;/p&gt;
+&lt;p&gt;第三，最重要的一点就是加入事务操作。&lt;/p&gt;
 
-&lt;p&gt;Kevin介绍了新版 WatchKit ，开发人员将能利用 WatchKit，访问更多硬件功能。包括麦克风及扬声器、视频、加速感应器、Taptic Engine，和 Digital Crown 等。&lt;/p&gt;
+&lt;p&gt;事务(Transaction)是访问并可能更新数据库中各种数据项的一个程序执行单元(unit)。在sqlite插入数据的时候默认一条语句就是一个事务，有多少条数据就有多少次磁盘操作。所以10000次磁盘操作可能几分钟都做不完，这个时候需要把10000条语句都封装成一个事务。&lt;/p&gt;
 
-&lt;p&gt;凭借 HomeKit，你将能靠 Apple Watch 上的一些 app 来直接控制电灯等家居设备。&lt;/p&gt;
-
-&lt;p&gt;面向开发人员的 watchOS 2 预览于今日推出。watchOS 2 将于今秋推出，作为免费的软件更新，并兼容每一只 Apple Watch。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;color: #3d82c6;&quot;&gt;Apple Music&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Jimmy Iovine 来到了台上，这家伙一上台很多人都以为是微软CEO Satya Nadella，只能说长得太像了！&lt;/p&gt;
-
-&lt;p&gt;不得不吐槽，WWDC搞个这个是干啥，并且做到最后还是做了个网易云音乐！&lt;/p&gt;
-
-&lt;p&gt;总之，这次大会Swift开源是一件大事，当看到Open Source时，我都快哭了，哈哈！另外，今天开始开发者账号可以跨越iOS、OS X和watch OS，赶快买吧！&lt;/p&gt;
-
-&lt;p&gt;本文原文链接：&lt;a href=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&quot; title=&quot;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&quot;&gt;https://github.com/coderyi/blog/blob/master/articles/2015/0609_WWDC2015.md&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;扩展链接：&lt;/p&gt;
-
-&lt;p&gt;WWDC 2015 图文直播： &lt;a href=&quot;http://www.apple.com/cn/live/2015-june-event/&quot; title=&quot;http://www.apple.com/cn/live/2015-june-event/&quot;&gt;http://www.apple.com/cn/live/2015-june-event/&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Apple Beta 版软件计划 ： &lt;a href=&quot;https://beta.apple.com/sp/zh/betaprogram/&quot; title=&quot;https://beta.apple.com/sp/zh/betaprogram/&quot;&gt;https://beta.apple.com/sp/zh/betaprogram/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;下面就是开始事务和提交事务的代码了&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; escaped=&quot;true&quot; style=&quot;background: #E8F2FB ;&quot;&gt;
+-(int)beginService{
+     char *errmsg;
+     int rc = sqlite3_exec(database, &quot;BEGIN transaction&quot;, NULL, NULL, &amp;amp;errmsg);
+     return rc;
+ }
+-(int)commitService{
+     char *errmsg;
+     int rc = sqlite3_exec(database, &quot;COMMIT transaction&quot;, NULL, NULL, &amp;amp;errmsg);
+     return rc;
+}&lt;/pre&gt;
+&lt;p&gt;接下来就把三个操作合并&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; escaped=&quot;true&quot; style=&quot;background: #E8F2FB ;&quot;&gt;-(int)addModelsTest:(NSArray *)models error:(NSError **) error{
+     char *errmsg;
+     __block NSMutableArray *sqls=[NSMutableArray array];
+     __block NoticeModel *aModel=[[NoticeModel alloc] init];
+     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+         for (int i=0; i&amp;lt;100000; i++) {
+             aModel=[models objectAtIndex:0];
+             NSString *sql=[NSString stringWithFormat:@&quot;insert into notices     values('%lf','%d','%@','%@','%@','%d','%d','%d','%d','%@')&quot;,aModel.myID,aModel.news_id,aModel.news_title,aModel.content,aModel.pic,aModel.sort,aModel.record_status,aModel.counter,aModel.suid,aModel.publish_time];
+             [sqls addObject:sql];
+         }
+         int r1=[self open];
+         [self beginService];
+         int rc;
+         int i;
+         for (i=0; i&amp;lt;100000; i++) {
+             rc=sqlite3_exec(database, [[sqls objectAtIndex:i] UTF8String], NULL, NULL, &amp;amp;errmsg);
+         }
+         [self commitService];
+         [self close];
+         if (i ==100000) {
+             dispatch_async(dispatch_get_main_queue(), ^{
+                 NSLog(@&quot;call back, the data is: %@&quot;, i);
+             });
+         } else {
+             NSLog(@&quot;error when download:%@&quot;, error);
+         }
+     });
+     return 0;
+ }&lt;/pre&gt;
 </description>
-        <pubDate>Tue, 09 Jun 2015 00:00:00 +0800</pubDate>
-        <link>http://localhost:4000/posts/WWDC2015/</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/WWDC2015/</guid>
+        <pubDate>Fri, 16 Jan 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/SQLite/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/SQLite/</guid>
         
-        <category>WWDC</category>
+        <category>数据库</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>iOS蓝牙4.0协议简单介绍</title>
+        <description>&lt;p&gt;iOS开发蓝牙4.0的框架是CoreBluetooth，本文主要介绍CoreBluetooth的使用，关于本文中的代码片段大多来自github上的一个demo，地址是&lt;a title=&quot;myz1104/Bluetooth&quot; href=&quot;https://github.com/myz1104/Bluetooth&quot;&gt;myz1104/Bluetooth&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;在CoreBluetooth中有两个主要的部分,Central和Peripheral，有一点类似Client Server。CBPeripheralManager 作为周边设备是服务器。CBCentralManager作为中心设备是客户端。所有可用的iOS设备可以作为周边（Peripheral）也可以作为中央（Central），但不可以同时既是周边也是中央。&lt;/p&gt;
+
+&lt;p&gt;一般手机是客户端， 设备（比如手环）是服务器，因为是手机去连接手环这个服务器。周边（Peripheral）是生成或者保存了数据的设备，中央（Central）是使用这些数据的设备。你可以认为周边是一个广播数据的设备，他广播到外部世界说他这儿有数据，并且也说明了能提供的服务。另一边，中央开始扫描附近有没有服务，如果中央发现了想要的服务，然后中央就会请求连接周边，一旦连接建立成功，两个设备之间就开始交换传输数据了。&lt;/p&gt;
+
+&lt;p&gt;除了中央和周边，我们还要考虑他俩交换的数据结构。这些数据在服务中被结构化，每个服务由不同的特征（Characteristics）组成，特征是包含一个单一逻辑值的属性类型。&lt;/p&gt;
+
+&lt;h3&gt;Peripheral的实现步骤&lt;/h3&gt;
+
+&lt;p&gt;首先是创建一个周边&lt;/p&gt;
+
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;_peripheralManager = [[CBPeripheralManager alloc]initWithDelegate:self queue:nil];&lt;/pre&gt;
+&lt;p&gt;接下来它就会响应代理的peripheralManagerDidUpdateState方法，可以获得peripheral的状态等信息，&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheralManagerDidUpdateState:(CBPeripheralManager *)peripheral
+{
+    switch (peripheral.state)
+    {
+        case CBPeripheralManagerStatePoweredOn:
+        {
+            [self setupService];
+        }
+            break;
+
+        default:
+        {
+            NSLog(@&quot;Peripheral Manager did change state&quot;);
+        }
+            break;
+    }
+}
+&lt;/pre&gt;
+&lt;p&gt;当发现周边设备的蓝牙是可以的时候，这就需要去准备你需要广播给其他中央设备的服务和特征了，这里通过调用setupService方法来实现。
+每一个服务和特征都需要用一个UUID（unique identifier）去标识，UUID是一个16bit或者128bit的值。如果你要创建你的中央-周边App，你需要创建你自己的128bit的UUID。你必须要确定你自己的UUID不能和其他已经存在的服务冲突。如果你正要创建一个自己的设备，需要实现标准委员会需求的UUID；如果你只是创建一个中央-周边App，我建议你打开Mac OS X的Terminal.app，用uuidgen命令生成一个128bit的UUID。你应该用该命令两次，生成两个UUID，一个是给服务用的，一个是给特征用的。然后，你需要添加他们到中央和周边App中。现在，在view controller的实现之前，我们添加以下的代码：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;static NSString * const kServiceUUID = @&quot;1C85D7B7-17FA-4362-82CF-85DD0B76A9A5&quot;;
+static NSString * const kCharacteristicUUID = @&quot;7E887E40-95DE-40D6-9AA0-36EDE2BAE253&quot;;
+&lt;/pre&gt;
+&lt;p&gt;下面就是setupService方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)setupService
+{
+    CBUUID *characteristicUUID = [CBUUID UUIDWithString:kCharacteristicUUID];
+
+    self.customCharacteristic = [[CBMutableCharacteristic alloc] initWithType:characteristicUUID properties:CBCharacteristicPropertyNotify value:nil permissions:CBAttributePermissionsReadable];
+
+    CBUUID *serviceUUID = [CBUUID UUIDWithString:kServiceUUID];
+
+    self.customService = [[CBMutableService alloc] initWithType:serviceUUID primary:YES];
+    [self.customService setCharacteristics:@[self.customCharacteristic]];
+    [self.peripheralManager addService:self.customService];
+
+
+}
+&lt;/pre&gt;
+&lt;p&gt;当调用了CBPeripheralManager的addService方法后，这里就会响应CBPeripheralManagerDelegate的- (void)peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error方法。这个时候就可以开始广播我们刚刚创建的服务了。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error
+{
+    if (error == nil)
+    {
+        [self.peripheralManager startAdvertising:@{ CBAdvertisementDataLocalNameKey : @&quot;ICServer&quot;, CBAdvertisementDataServiceUUIDsKey : @[[CBUUID UUIDWithString:kServiceUUID]] }];
+    }
+}&lt;/pre&gt;
+&lt;p&gt;当然到这里，你已经做完了peripheralManager的工作了，中央设备已经可以接受到你的服务了。不过这是静止的数据，你还可以调用- (BOOL)updateValue:(NSData *)value forCharacteristic:(CBMutableCharacteristic *)characteristic onSubscribedCentrals:(NSArray *)centrals方法可以给中央生成动态数据的地方。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)sendToSubscribers:(NSData *)data {
+  if (self.peripheral.state != CBPeripheralManagerStatePoweredOn) {
+    LXCBLog(@&quot;sendToSubscribers: peripheral not ready for sending state: %d&quot;, self.peripheral.state);
+    return;
+  }
+
+  BOOL success = [self.peripheral updateValue:data
+                            forCharacteristic:self.characteristic
+                         onSubscribedCentrals:nil];
+  if (!success) {
+    LXCBLog(@&quot;Failed to send data, buffering data for retry once ready.&quot;);
+    self.pendingData = data;
+    return;
+  }
+}&lt;/pre&gt;
+&lt;p&gt;central订阅了characteristic的值，当更新值的时候peripheral会调用updateValue: forCharacteristic: onSubscribedCentrals:(NSArray*)centrals去为数组里面的centrals更新对应characteristic的值，在更新过后peripheral为每一个central走一遍下面的代理方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheralManager:(CBPeripheralManager *)peripheral central:(CBCentral *)central didSubscribeToCharacteristic:(CBCharacteristic *)characteristic&lt;/pre&gt;
+&lt;p&gt;peripheral接受到一个读或者写的请求时，会响应以下两个代理方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheralManager:(CBPeripheralManager *)peripheral didReceiveReadRequest:(CBATTRequest *)request
+
+- (void)peripheralManager:(CBPeripheralManager *)peripheral didReceiveWriteRequests:(NSArray *)requests&lt;/pre&gt;
+&lt;p&gt;那么现在peripheral就已经创建好了。&lt;/p&gt;
+&lt;h3&gt;创建一个中央&lt;/h3&gt;
+&lt;p&gt;创建中央并且连接周边
+现在，我们已经有了一个周边，让我们创建我们的中央。中央就是那个处理周边发送来的数据的设备。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;self.manager = [[CBCentralManager alloc] initWithDelegate:self queue:dispatch_get_main_queue()];&lt;/pre&gt;
+&lt;p&gt;当Central Manager被初始化，我们要检查它的状态，以检查运行这个App的设备是不是支持BLE。实现CBCentralManagerDelegate的代理方法：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)centralManagerDidUpdateState:(CBCentralManager *)central
+{
+    switch (central.state)
+    {
+        case CBCentralManagerStatePoweredOn:
+        {
+            [self.manager scanForPeripheralsWithServices:@[ [CBUUID UUIDWithString:kServiceUUID]]
+                                                 options:@{CBCentralManagerScanOptionAllowDuplicatesKey : @YES }];
+        }
+            break;
+        default:
+        {
+            NSLog(@&quot;Central Manager did change state&quot;);
+        }
+            break;
+    }
+}&lt;/pre&gt;
+&lt;p&gt;当app的设备是支持蓝牙的时候，需要调用CBCentralManager实例的- (void)scanForPeripheralsWithServices:(NSArray *)serviceUUIDs options:(NSDictionary *)options方法，用来寻找一个指定的服务的peripheral。一旦一个周边在寻找的时候被发现，中央的代理会收到以下回调：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
+{
+
+    NSString *UUID = [peripheral.identifier UUIDString];
+    NSString *UUID1 = CFBridgingRelease(CFUUIDCreateString(NULL, peripheral.UUID));
+    NSLog(@&quot;----发现外设----%@%@&quot;, UUID,UUID1);
+    [self.manager stopScan];
+
+    if (self.peripheral != peripheral)
+    {
+        self.peripheral = peripheral;
+        NSLog(@&quot;Connecting to peripheral %@&quot;, peripheral);
+        [self.manager connectPeripheral:peripheral options:nil];
+    }
+}&lt;/pre&gt;
+&lt;p&gt;这个时候一个附带着广播数据和信号质量(RSSI-Received Signal Strength Indicator)的周边被发现。这是一个很酷的参数，知道了信号质量，你可以用它去判断远近。任何广播、扫描的响应数据保存在advertisementData 中，可以通过CBAdvertisementData 来访问它。
+这个时候你用可以连接这个周边设备了，&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;[self.manager connectPeripheral:peripheral options:nil];&lt;/pre&gt;
+&lt;p&gt;它会响应下面的代理方法，&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
+{
+    NSLog(@&quot;----成功连接外设----&quot;);
+    [self.peripheral setDelegate:self];
+    [self.peripheral discoverServices:@[ [CBUUID UUIDWithString:kServiceUUID]]];
+}&lt;/pre&gt;
+&lt;p&gt;访问周边的服务
+上面的CBCentralManagerDelegate代理会返回CBPeripheral实例，它的- (void)discoverServices:(NSArray *)serviceUUIDs方法就是访问周边的服务了，这个方法会响应CBPeripheralDelegate的方法。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheral:(CBPeripheral *)aPeripheral didDiscoverServices:(NSError *)error
+{
+    NSLog(@&quot;----didDiscoverServices----Error:%@&quot;,error);
+    if (error)
+    {
+        NSLog(@&quot;Error discovering service: %@&quot;, [error localizedDescription]);
+        [self cleanup];
+        return;
+    }
+
+    for (CBService *service in aPeripheral.services)
+    {
+        NSLog(@&quot;Service found with UUID: %@&quot;, service.UUID);
+        if ([service.UUID isEqual:[CBUUID UUIDWithString:kServiceUUID]])
+        {
+            [self.peripheral discoverCharacteristics:@[[CBUUID UUIDWithString:kCharacteristicUUID],[CBUUID UUIDWithString:kWrriteCharacteristicUUID]] forService:service];
+        }
+    }
+}&lt;/pre&gt;
+&lt;p&gt;在上面的方法中如果没有error，可以调用discoverCharacteristics方法请求周边去寻找它的服务所列出的特征，它会响应下面的方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error
+{
+    if (error)
+    {
+        NSLog(@&quot;Error discovering characteristic: %@&quot;, [error localizedDescription]);
+        return;
+    }
+    if ([service.UUID isEqual:[CBUUID UUIDWithString:kServiceUUID]])
+    {
+        for (CBCharacteristic *characteristic in service.characteristics)
+        {
+            NSLog(@&quot;----didDiscoverCharacteristicsForService---%@&quot;,characteristic);
+            if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kCharacteristicUUID]])
+            {
+                [peripheral readValueForCharacteristic:characteristic];
+                [peripheral setNotifyValue:YES forCharacteristic:characteristic];
+            }
+
+            if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kWrriteCharacteristicUUID]])
+            {
+                writeCharacteristic = characteristic;
+            }
+
+        }
+    }
+}&lt;/pre&gt;
+&lt;p&gt;这个时候peripheral可以调用两个方法，
+[peripheral readValueForCharacteristic:characteristic]这个是读特征值的，会响应- (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error；&lt;/p&gt;
+
+&lt;p&gt;[peripheral setNotifyValue:YES forCharacteristic:characteristic];会响应- (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error；&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
+{
+    if (error)
+    {
+        NSLog(@&quot;Error changing notification state: %@&quot;, error.localizedDescription);
+    }
+
+    // Exits if it's not the transfer characteristic
+    if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kCharacteristicUUID]] )
+    {
+        // Notification has started
+        if (characteristic.isNotifying)
+        {
+            NSLog(@&quot;Notification began on %@&quot;, characteristic);
+            [peripheral readValueForCharacteristic:characteristic];
+        }
+        else
+        { // Notification has stopped
+            // so disconnect from the peripheral
+            NSLog(@&quot;Notification stopped on %@.  Disconnecting&quot;, characteristic);
+            [self.manager cancelPeripheralConnection:self.peripheral];
+        }
+    }
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
+{
+    NSLog(@&quot;----Value---%@&quot;,characteristic.value);
+    if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kCharacteristicUUID]])
+    {
+
+        if (writeCharacteristic)
+        {
+            Byte ACkValue[3] = {0};
+            ACkValue[0] = 0xe0; ACkValue[1] = 0x00; ACkValue[2] = ACkValue[0] + ACkValue[1];
+            NSData *data = [NSData dataWithBytes:&amp;amp;ACkValue length:sizeof(ACkValue)];
+            [self.peripheral writeValue:data
+                      forCharacteristic:writeCharacteristic
+                                   type:CBCharacteristicWriteWithoutResponse];
+        }
+    }
+}&lt;/pre&gt;
+&lt;p&gt;在上面的方法中，- (void)writeValue:(NSData *)data forCharacteristic:(CBCharacteristic *)characteristic type:(CBCharacteristicWriteType)type是一个对周边设备写数据的方法，它会响应下面的方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
+{
+    NSLog(@&quot;---didWriteValueForCharacteristic-----&quot;);
+    if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kWrriteCharacteristicUUID]])
+    {
+        NSLog(@&quot;----value更新----&quot;);
+
+    }
+}&lt;/pre&gt;
+&lt;p&gt;这样，中央设备也实现了读写数据的功能了。&lt;/p&gt;
+
+&lt;p&gt;另外，github上有一个封装的第三方开源蓝牙框架，地址是&lt;a title=&quot;kickingvegas/YmsCoreBluetooth&quot; href=&quot;https://github.com/kickingvegas/YmsCoreBluetooth&quot;&gt;kickingvegas/YmsCoreBluetooth&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Fri, 16 Jan 2015 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/CoreBluetooth/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/CoreBluetooth/</guid>
+        
+        <category>网络通信</category>
+        
+        
+        <category>iOS</category>
+        
+      </item>
+    
+      <item>
+        <title>iOS的xmppframework简介</title>
+        <description>&lt;p&gt;2014-12-13&lt;/p&gt;
+
+&lt;p&gt;1登录和好友上下线&lt;/p&gt;
+
+&lt;p&gt;1.1XMPP中常用对象们&lt;/p&gt;
+
+&lt;p&gt;XMPPStream：xmpp基础服务类&lt;/p&gt;
+
+&lt;p&gt;XMPPRoster：好友列表类&lt;/p&gt;
+
+&lt;p&gt;XMPPRosterCoreDataStorage：好友列表（用户账号）在core data中的操作类&lt;/p&gt;
+
+&lt;p&gt;XMPPvCardCoreDataStorage：好友名片（昵称，签名，性别，年龄等信息）在core data中的操作类&lt;/p&gt;
+
+&lt;p&gt;XMPPvCardTemp：好友名片实体类，从数据库里取出来的都是它&lt;/p&gt;
+
+&lt;p&gt;xmppvCardAvatarModule：好友头像&lt;/p&gt;
+
+&lt;p&gt;XMPPReconnect：如果失去连接,自动重连&lt;/p&gt;
+
+&lt;p&gt;XMPPRoom：提供多用户聊天支持&lt;/p&gt;
+
+&lt;p&gt;XMPPPubSub：发布订阅&lt;/p&gt;
+
+&lt;p&gt;1.2登录操作，也就是连接xmpp服务器&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)connect {
+    if (self.xmppStream == nil) {
+        self.xmppStream = [[XMPPStream alloc] init];
+        [self.xmppStream addDelegate:self delegateQueue:dispatch_get_main_queue()];
+    }
+    if (![self.xmppStream isConnected]) {
+        NSString *username = [[NSUserDefaults standardUserDefaults] objectForKey:@&quot;username&quot;];
+        XMPPJID *jid = [XMPPJID jidWithUser:username domain:@&quot;lizhen&quot; resource:@&quot;Ework&quot;];
+        [self.xmppStream setMyJID:jid];
+        [self.xmppStream setHostName:@&quot;10.4.125.113&quot;];
+        NSError *error = nil;
+        if (![self.xmppStream connect:&amp;amp;error]) {
+            NSLog(@&quot;Connect Error: %@&quot;, [[error userInfo] description]);
+        }
+    }
+}&lt;/pre&gt;
+&lt;p&gt;connect成功之后&lt;/p&gt;
+
+&lt;p&gt;会依次调用XMPPStreamDelegate的方法，&lt;/p&gt;
+
+&lt;p&gt;首先调用&lt;/p&gt;
+&lt;pre&gt;- (void)xmppStream:(XMPPStream *)sender socketDidConnect:(GCDAsyncSocket *)socket&lt;/pre&gt;
+
+&lt;p&gt;然后&lt;/p&gt;
+&lt;pre&gt;
+- (void)xmppStreamDidConnect:(XMPPStream *)sender&lt;/pre&gt;
+
+&lt;p&gt;在该方法下面需要使用xmppStream 的authenticateWithPassword方法进行密码验证，成功的话会响应delegate的方法，就是下面这个&lt;/p&gt;
+
+&lt;pre&gt;- (void)xmppStreamDidAuthenticate:(XMPPStream *)sender&lt;/pre&gt;
+
+&lt;p&gt;1.3上线&lt;/p&gt;
+
+&lt;p&gt;实现 - (void)xmppStreamDidAuthenticate:(XMPPStream *)sender 委托方法&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppStreamDidAuthenticate:(XMPPStream *)sender {
+    XMPPPresence *presence = [XMPPPresence presenceWithType:@&quot;available&quot;];
+    [self.xmppStream sendElement:presence];
+}&lt;/pre&gt;
+&lt;p&gt;1.4退出并断开连接&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)disconnect {
+    XMPPPresence *presence = [XMPPPresence presenceWithType:@&quot;unavailable&quot;];
+    [self.xmppStream sendElement:presence];
+
+    [self.xmppStream disconnect];
+}&lt;/pre&gt;
+
+&lt;p&gt;1.5好友状态&lt;/p&gt;
+
+&lt;p&gt;获取好友状态，通过实现&lt;/p&gt;
+&lt;pre&gt;- (void)xmppStream:(XMPPStream *)sender didReceivePresence:(XMPPPresence *)presence&lt;/pre&gt;
+&lt;p&gt;方法&lt;/p&gt;
+
+&lt;p&gt;当接收到 &lt;presence&gt;&lt;/presence&gt; 标签的内容时，XMPPFramework 框架回调该方法&lt;/p&gt;
+
+&lt;p&gt;一个 &lt;presence&gt;&lt;/presence&gt; 标签的格式一般如下：&lt;/p&gt;
+&lt;pre lang=&quot;xml&quot; line=&quot;1&quot;&gt;
+&amp;lt;presence from=&quot;&quot;&amp;gt;
+　　&amp;lt;show&amp;gt;这里是显示的内容&amp;lt;show /&amp;gt;
+　　&amp;lt;status&amp;gt;这里是显示的状态&amp;lt;status /&amp;gt;
+&amp;lt;presence /&amp;gt;&lt;/pre&gt;
+&lt;p&gt;presence 的状态：&lt;/p&gt;
+
+&lt;p&gt;available 上线&lt;/p&gt;
+
+&lt;p&gt;away 离开&lt;/p&gt;
+
+&lt;p&gt;do not disturb 忙碌&lt;/p&gt;
+
+&lt;p&gt;unavailable 下线&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppStream:(XMPPStream *)sender didReceivePresence:(XMPPPresence *)presence {
+    NSString *presenceType = [presence type];
+    NSString *presenceFromUser = [[presence from] user];
+    if (![presenceFromUser isEqualToString:[[sender myJID] user]]) {
+        if ([presenceType isEqualToString:@&quot;available&quot;]) {
+            //
+        } else if ([presenceType isEqualToString:@&quot;unavailable&quot;]) {
+            //
+        }
+    }
+}&lt;/pre&gt;
+&lt;p&gt;2接收消息和发送消息
+2.1接收消息&lt;/p&gt;
+
+&lt;p&gt;通过实现&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;(void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message;
+方法&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;当接收到 &lt;message&gt;&lt;/message&gt; 标签的内容时，XMPPFramework 框架回调该方法&lt;/p&gt;
+
+&lt;p&gt;根据 XMPP 协议，消息体的内容存储在标签 &amp;lt;body /&amp;gt; 内&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message {
+    NSString *messageBody = [[message elementForName:@&quot;body&quot;] stringValue];
+}&lt;/pre&gt;
+&lt;p&gt;2.2发送消息&lt;/p&gt;
+
+&lt;p&gt;发送消息，我们需要根据 XMPP 协议，将数据放到 &lt;message&gt;&lt;/message&gt; 标签内，例如：&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;&amp;lt;message type=&quot;chat&quot; to=&quot;xiaoming@example.com&quot;&amp;gt;
+　　&amp;lt;body&amp;gt;Hello World!&amp;lt;body /&amp;gt;
+&amp;lt;message /&amp;gt;&lt;/pre&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)sendMessage:(NSString *) message toUser:(NSString *) user {
+    NSXMLElement *body = [NSXMLElement elementWithName:@&quot;body&quot;];
+    [body setStringValue:message];
+    NSXMLElement *message = [NSXMLElement elementWithName:@&quot;message&quot;];
+    [message addAttributeWithName:@&quot;type&quot; stringValue:@&quot;chat&quot;];
+    NSString *to = [NSString stringWithFormat:@&quot;%@@example.com&quot;, user];
+    [message addAttributeWithName:@&quot;to&quot; stringValue:to];
+    [message addChild:body];
+    [self.xmppStream sendElement:message];
+}&lt;/pre&gt;
+&lt;p&gt;3获取好友信息和删除好友
+3.1好友列表和好友名片&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;[_xmppRoster fetchRoster];//获取好友列表
+//获取到一个好友节点
+- (void)xmppRoster:(XMPPRoster *)sender didRecieveRosterItem:(NSXMLElement *)item
+//获取完好友列表
+- (void)xmppRosterDidEndPopulating:(XMPPRoster *)sender
+//到服务器上请求联系人名片信息
+- (void)fetchvCardTempForJID:(XMPPJID *)jid;
+//请求联系人的名片，如果数据库有就不请求，没有就发送名片请求
+- (void)fetchvCardTempForJID:(XMPPJID *)jid ignoreStorage:(BOOL)ignoreStorage;
+//获取联系人的名片，如果数据库有就返回，没有返回空，并到服务器上抓取
+- (XMPPvCardTemp *)vCardTempForJID:(XMPPJID *)jid shouldFetch:(BOOL)shouldFetch;
+//更新自己的名片信息
+- (void)updateMyvCardTemp:(XMPPvCardTemp *)vCardTemp;
+//获取到一盒联系人的名片信息的回调
+- (void)xmppvCardTempModule:(XMPPvCardTempModule *)vCardTempModule
+        didReceivevCardTemp:(XMPPvCardTemp *)vCardTemp
+                     forJID:(XMPPJID *)jid&lt;/pre&gt;
+&lt;p&gt;3.2添加好友&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;//name为用户账号
+    - (void)XMPPAddFriendSubscribe:(NSString *)name
+    {
+        //XMPPHOST 就是服务器名，  主机名
+        XMPPJID *jid = [XMPPJID jidWithString:[NSString stringWithFormat:@&quot;%@@%@&quot;,name,XMPPHOST]];
+        //[presence addAttributeWithName:@&quot;subscription&quot; stringValue:@&quot;好友&quot;];
+        [xmppRoster subscribePresenceToUser:jid];
+
+    }&lt;/pre&gt;
+
+&lt;p&gt;3.3收到添加好友的请求&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppRoster:(XMPPRoster *)sender didReceivePresenceSubscriptionRequest:(XMPPPresence *)presence
+    {
+        //取得好友状态
+        NSString *presenceType = [NSString stringWithFormat:@&quot;%@&quot;, [presence type]]; //online/offline
+        //请求的用户
+        NSString *presenceFromUser =[NSString stringWithFormat:@&quot;%@&quot;, [[presence from] user]];
+        NSLog(@&quot;presenceType:%@&quot;,presenceType);
+        NSLog(@&quot;presence2:%@  sender2:%@&quot;,presence,sender);
+        XMPPJID *jid = [XMPPJID jidWithString:presenceFromUser];
+        //接收添加好友请求
+        [xmppRoster acceptPresenceSubscriptionRequestFrom:jid andAddToRoster:YES];
+    }&lt;/pre&gt;
+&lt;p&gt;3.4删除好友&lt;/p&gt;
+
+&lt;p&gt;//删除好友，name为好友账号&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)removeBuddy:(NSString *)name
+{
+    XMPPJID *jid = [XMPPJID jidWithString:[NSString stringWithFormat:@&quot;%@@%@&quot;,name,XMPPHOST]];
+
+    [self xmppRoster] removeUser:jid];
+}&lt;/pre&gt;
+&lt;p&gt;4聊天室
+    //初始化聊天室&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    XMPPJID *roomJID = [XMPPJID jidWithString:ROOM_JID];
+
+    xmppRoom = [[XMPPRoom alloc] initWithRoomStorage:self jid:roomJID];
+
+    [xmppRoom activate:xmppStream];
+    [xmppRoom addDelegate:self delegateQueue:dispatch_get_main_queue()];&lt;/pre&gt;
+&lt;p&gt;//创建聊天室成功&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+ -(void)xmppRoomDidCreate:(XMPPRoom *)sender
+    {
+        DDLogInfo(@&quot;%@: %@&quot;, THIS_FILE, THIS_METHOD);
+    }&lt;/pre&gt;
+&lt;p&gt;//加入聊天室，使用昵称&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt; [xmppRoom joinRoomUsingNickname:@&quot;quack&quot; history:nil];&lt;/pre&gt;
+&lt;p&gt;//获取聊天室信息&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+ - (void)xmppRoomDidJoin:(XMPPRoom *)sender
+    {
+        [xmppRoom fetchConfigurationForm];
+        [xmppRoom fetchBanList];
+        [xmppRoom fetchMembersList];
+        [xmppRoom fetchModeratorsList];
+    }&lt;/pre&gt;
+
+&lt;p&gt;如果房间存在，会调用委托&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    // 收到禁止名单列表
+    - (void)xmppRoom:(XMPPRoom *)sender didFetchBanList:(NSArray *)items;
+    // 收到好友名单列表
+    - (void)xmppRoom:(XMPPRoom *)sender didFetchMembersList:(NSArray *)items;
+    // 收到主持人名单列表
+    - (void)xmppRoom:(XMPPRoom *)sender didFetchModeratorsList:(NSArray *)items;&lt;/pre&gt;
+&lt;p&gt;房间不存在，调用委托&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    - (void)xmppRoom:(XMPPRoom *)sender didNotFetchBanList:(XMPPIQ *)iqError;
+    - (void)xmppRoom:(XMPPRoom *)sender didNotFetchMembersList:(XMPPIQ *)iqError;
+    - (void)xmppRoom:(XMPPRoom *)sender didNotFetchModeratorsList:(XMPPIQ *)iqError;&lt;/pre&gt;
+&lt;p&gt;离开房间&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+[xmppRoom deactivate:xmppStream];&lt;/pre&gt;
+&lt;p&gt;XMPPRoomDelegate的其他代理方法&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;//离开聊天室
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppRoomDidLeave:(XMPPRoom *)sender
+    {
+        DDLogVerbose(@&quot;%@: %@&quot;, THIS_FILE, THIS_METHOD);
+    }&lt;/pre&gt;
+&lt;p&gt;//新人加入群聊&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppRoom:(XMPPRoom *)sender occupantDidJoin:(XMPPJID *)occupantJID
+    {
+        DDLogVerbose(@&quot;%@: %@&quot;, THIS_FILE, THIS_METHOD);
+    }
+&lt;/pre&gt;
+&lt;p&gt;//有人退出群聊&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt; - (void)xmppRoom:(XMPPRoom *)sender occupantDidLeave:(XMPPJID *)occupantJID
+    {
+        DDLogVerbose(@&quot;%@: %@&quot;, THIS_FILE, THIS_METHOD);
+    }&lt;/pre&gt;
+
+&lt;p&gt;//有人在群里发言&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt; - (void)xmppRoom:(XMPPRoom *)sender didReceiveMessage:(XMPPMessage *)message fromOccupant:(XMPPJID *)occupantJID
+    {
+        DDLogVerbose(@&quot;%@: %@&quot;, THIS_FILE, THIS_METHOD);
+    }&lt;/pre&gt;
+&lt;p&gt;5消息回执
+这个是XEP－0184协议的内容&lt;/p&gt;
+
+&lt;p&gt;协议内容：&lt;/p&gt;
+
+&lt;p&gt;发送消息时附加回执请求&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    &amp;lt;message
+    from='northumberland@shakespeare.lit/westminster'
+    id='richard2-4.1.247'
+    to='kingrichard@royalty.england.lit/throne'&amp;gt;
+        &amp;lt;body&amp;gt;My lord, dispatch; read o'er these articles.&amp;lt;/body&amp;gt;
+        &amp;lt;request xmlns='urn:xmpp:receipts'/&amp;gt;
+    &amp;lt;/message&amp;gt;&lt;/pre&gt;
+&lt;p&gt;代码实现&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    NSString *siID = [XMPPStream generateUUID];
+    //发送消息
+    XMPPMessage *message = [XMPPMessage messageWithType:@&quot;chat&quot; to:jid elementID:siID];
+    NSXMLElement *receipt = [NSXMLElement elementWithName:@&quot;request&quot; xmlns:@&quot;urn:xmpp:receipts&quot;];
+    [message addChild:receipt];
+    [message addBody:@&quot;测试&quot;];
+    [self.xmppStream sendElement:message];&lt;/pre&gt;
+&lt;p&gt;收到回执请求的消息，发送回执&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;
+    &amp;lt;message
+    from='kingrichard@royalty.england.lit/throne'
+    id='bi29sg183b4v'
+    to='northumberland@shakespeare.lit/westminster'&amp;gt;
+        &amp;lt;received xmlns='urn:xmpp:receipts' id='richard2-4.1.247'/&amp;gt;
+    &amp;lt;/message&amp;gt;&lt;/pre&gt;
+
+&lt;p&gt;代码实现&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;- (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message
+    {
+        //回执判断
+        NSXMLElement *request = [message elementForName:@&quot;request&quot;];
+        if (request)
+        {
+            if ([request.xmlns isEqualToString:@&quot;urn:xmpp:receipts&quot;])//消息回执
+            {
+                //组装消息回执
+                XMPPMessage *msg = [XMPPMessage messageWithType:[message attributeStringValueForName:@&quot;type&quot;] to:message.from elementID:[message attributeStringValueForName:@&quot;id&quot;]];
+                NSXMLElement *recieved = [NSXMLElement elementWithName:@&quot;received&quot; xmlns:@&quot;urn:xmpp:receipts&quot;];
+                [msg addChild:recieved];
+
+                //发送回执
+                [self.xmppStream sendElement:msg];
+            }
+        }else
+        {
+            NSXMLElement *received = [message elementForName:@&quot;received&quot;];
+            if (received)
+            {
+                if ([received.xmlns isEqualToString:@&quot;urn:xmpp:receipts&quot;])//消息回执
+                {
+                    //发送成功
+                    NSLog(@&quot;message send success!&quot;);
+                }
+            }
+        }
+
+        //消息处理
+        //...  &lt;/pre&gt;
+&lt;p&gt;6添加AutoPing
+为了监听服务器是否有效，增加心跳监听。用XEP-0199协议，在XMPPFrameWork框架下，封装了 XMPPAutoPing 和 XMPPPing两个类都可以使用，因为XMPPAutoPing已经组合进了XMPPPing类，所以XMPPAutoPing使用起来更方便。&lt;/p&gt;
+&lt;pre lang=&quot;objc&quot; line=&quot;1&quot;&gt;//初始化并启动ping
+-(void)autoPingProxyServer:(NSString*)strProxyServer
+{
+    _xmppAutoPing = [[XMPPAutoPingalloc] init];
+    [_xmppAutoPingactivate:_xmppStream];
+    [_xmppAutoPingaddDelegate:selfdelegateQueue:  dispatch_get_main_queue()];
+    _xmppAutoPing.respondsToQueries = YES;
+    _xmppAutoPing.pingInterval=2;//ping 间隔时间
+    if (nil != strProxyServer)
+    {
+       _xmppAutoPing.targetJID = [XMPPJID jidWithString: strProxyServer ];//设置ping目标服务器，如果为nil,则监听socketstream当前连接上的那个服务器
+    }
+}
+//卸载监听
+ [_xmppAutoPing   deactivate];
+ [_xmppAutoPing   removeDelegate:self];
+ _xmppAutoPing = nil;
+//ping XMPPAutoPingDelegate的委托方法:
+- (void)xmppAutoPingDidSendPing:(XMPPAutoPing *)sender
+{
+    NSLog(@&quot;- (void)xmppAutoPingDidSendPing:(XMPPAutoPing *)sender&quot;);
+}
+- (void)xmppAutoPingDidReceivePong:(XMPPAutoPing *)sender
+{
+    NSLog(@&quot;- (void)xmppAutoPingDidReceivePong:(XMPPAutoPing *)sender&quot;);
+}
+
+- (void)xmppAutoPingDidTimeout:(XMPPAutoPing *)sender
+{
+    NSLog(@&quot;- (void)xmppAutoPingDidTimeout:(XMPPAutoPing *)sender&quot;);
+}&lt;/pre&gt;
+
+&lt;p&gt;如果想要学习更多XMPPFramework的东西，我以前看过一个比较全面的demo，地址：&lt;a href=&quot;http://code4app.com/ios/%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%BE%A4%E8%81%8A%E7%B3%BB%E7%BB%9F1.2/535651f2933bf0647d8b570f&quot; title=&quot;即时通讯群聊系统&quot;&gt;即时通讯群聊系统&lt;/a&gt;&lt;/p&gt;
+</description>
+        <pubDate>Sat, 13 Dec 2014 00:00:00 +0800</pubDate>
+        <link>http://localhost:4000/posts/xmppframework/</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/xmppframework/</guid>
+        
+        <category>网络通信</category>
         
         
         <category>iOS</category>

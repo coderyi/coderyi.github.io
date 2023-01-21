@@ -119,23 +119,23 @@
 
 <p>目前官方的alibaba/Weex仓库里面</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    pod 'WeexSDK', :path=&gt;'../sdk/'
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    pod 'WeexSDK', :path=&gt;'../sdk/'
     pod 'WXDevtool', :path=&gt;'../WXDevtool/'
     pod 'ATSDK-Weex', '0.0.1'
 </code></pre></div></div>
 
 <p>它们直接使用的weex仓库的sdk,但是weex主仓库的WXDevtool已经不维护了，需要替换成，<a href="https://github.com/weexteam/weex-devtool-iOS">weexteam/weex-devtool-iOS</a>的代码。</p>
 
-<p>另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framwork,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。</p>
+<p>另外也可以直接从cocoapods的源pod仓库，但是cocoapods的源都是打包成framework,很多文件并没有设置为public，所以导致很多头文件没有暴露出来。</p>
 
 <p>当然你也可以不用通过cocoapods集成，直接把代码拉进工程就可以，如果发生</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Unknown type name 'NSString'
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Unknown type name 'NSString'
 </code></pre></div></div>
 
 <p>你可能需要把layout.c文件右侧的type改为Objective-C Source，或者直接修改为layout.m。</p>
 
 <p>基本上JS页面是在WXDemoViewController工作的，你可能需要接收页面刷新的通知，以支持实时刷新</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@"RefreshInstance" object:nil];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(notificationRefreshInstance:) name:@"RefreshInstance" object:nil];
 </code></pre></div></div>
 
 <p>页面会维护一个WXSDKInstance实例，WXSDKInstance就是weex渲染的实例对象，提供了很多页面渲染相关的接口，比如renderWithURL、refreshInstance、destroyInstance等</p>
@@ -150,19 +150,19 @@
 
 <p>然后实现方法</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (instancetype)initWithRef:(NSString *)ref type:(NSString *)type styles:(NSDictionary *)styles attributes:(NSDictionary *)attributes events:(NSArray *)events weexInstance:(WXSDKInstance *)weexInstance
 {}
 </code></pre></div></div>
 
 <p>注意这个方法不在主线程，这里面接收一些js传过来的参数，以在js端写的image标记为例子</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;image style="width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220" src=&gt;&lt;/image&gt;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;image style="width: 100;height: 100;margin-top:20;margin-right:20;margin-left:220" src=&gt;&lt;/image&gt;
 
 </code></pre></div></div>
 
 <p>到objc端就是</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ref:701
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ref:701
 type:image
 styles:
 {
@@ -182,7 +182,7 @@ attributes:
 
 <p>然后在loadView的时候可能需要返回自己的objc组件</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (UIView *)loadView
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (UIView *)loadView
 {
     return [[WXImageView alloc] init];
 }
@@ -201,13 +201,13 @@ attributes:
 
 <p>需要做的是实现WXModuleProtocol协议，并且写自己的方法就可以了，这里需要通过weex的宏把需要public的方法导出</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>WX_EXPORT_METHOD(@selector(fetch:callback:progressCallback:))
 
 </code></pre></div></div>
 
 <p>在module中目前是没有view的，但是你可以通过由js传过来的ref值拿到</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    WXComponent *targetComponent = [self.weexInstance componentForRef:nodeRef];
     CALayer *layer = targetComponent.layer;
     UIView *view = targetComponent.view;
 </code></pre></div></div>
@@ -216,7 +216,7 @@ attributes:
 
 <p>1.如果设置js文件在bundle中载入的话，需要把build的js文件拖入工程，如果的你的we里面一开始就调用了js文件，由于只会buildwe文件，所以还需要把之前的js文件拖入工程，另外examples里面判断iOSAssets是这样的</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      var isiOSAssets = bundleUrl.indexOf('file:///') &gt;= 0 &amp;&amp; bundleUrl.indexOf('WeexDemo.app') &gt; 0;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      var isiOSAssets = bundleUrl.indexOf('file:///') &gt;= 0 &amp;&amp; bundleUrl.indexOf('WeexDemo.app') &gt; 0;
 
 </code></pre></div></div>
 

@@ -148,7 +148,7 @@
 
 <p>主要用来渲染页面,一般通过renderWithURL方法，然后能够接收一些回调和一些视图相关的方法</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>onCreate //根视图rootView创建的时候
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>onCreate //根视图rootView创建的时候
 renderFinish//视图渲染完成
 componentForRef //通过视图索引拿到对应的组件视图
 </code></pre></div></div>
@@ -159,7 +159,7 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 <p>比如调用JS</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 - (void)executeJsMethod:(WXBridgeMethod *)method
 {
     if (!method) return;
@@ -185,20 +185,20 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 <p>首先在ViewController里的render放初始化WXSDKInstance，因为render会支持实时刷新，所以每次都需要先销毁这个实例。</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [_instance destroyInstance];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [_instance destroyInstance];
     _instance = [[WXSDKInstance alloc] init];
 
 </code></pre></div></div>
 
 <p>然后WXSDKManager会保存instanceId</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        [WXSDKManager storeInstance:self forID:_instanceId];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        [WXSDKManager storeInstance:self forID:_instanceId];
 
 </code></pre></div></div>
 
 <p>然后会调用renderWithURL方法来载入script,在这里会判断是本地文件还是需要从服务器下载，</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)renderWithURL:(NSURL *)url options:(NSDictionary *)options data:(id)data{
 	    if ([url isFileURL]) {
         //from local
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -216,13 +216,13 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 <p>然后就会根据script文件渲染视图</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[weakSelf renderView:script options:newOptions data:data];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[weakSelf renderView:script options:newOptions data:data];
 
 </code></pre></div></div>
 
 <p>在这个方法里面首先会创建根视图，当创建完成时WXSDKInstance会收到onCreate的回调</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    //TODO WXRootView
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    //TODO WXRootView
     WXPerformBlockOnMainThread(^{
         self.rootView = [[WXView alloc] initWithFrame:self.frame];
         if(self.onCreate) {
@@ -234,13 +234,13 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 <p>之后再通过bridge调用JS方法来开始创建实例</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self callJSMethod:@"createInstance" args:args];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self callJSMethod:@"createInstance" args:args];
 
 </code></pre></div></div>
 
 <p>然后这里会判断JSFramework也就是js有没有加载完成，然后再通过WXJSBridge的JSContext来执行js方法，这里调用的就是js的createInstance方法，args里面主要就是instanceID，we文件转化的js文件，和options。</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)callJSMethod:(NSString *)method args:(NSArray *)args
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)callJSMethod:(NSString *)method args:(NSArray *)args
 {
     [[_jsContext globalObject] invokeMethod:method withArguments:args];
 }
@@ -253,7 +253,7 @@ componentForRef //通过视图索引拿到对应的组件视图
 
 <p>首先要注册一个组件</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self registerModule:@"dom" withClass:NSClassFromString(@"WXDomModule")];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [self registerModule:@"dom" withClass:NSClassFromString(@"WXDomModule")];
 
 </code></pre></div></div>
 <p>注册module的时候 会通过下面方法</p>
@@ -281,7 +281,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 <p>然后通过methodForSelector拿到WX_EXPORT_METHOD方法的返回值，并且保存到methods中</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerModuleMethods {
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerModuleMethods {
 
             if ([currentClass respondsToSelector:selector]) {
                 method = ((NSString* (*)(id, SEL))[currentClass methodForSelector:selector])(currentClass, selector);
@@ -294,7 +294,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 <p>然后拿到WXModuleConfig组成的_moduleMap之后再发送给JS端</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [[WXSDKManager bridgeMgr] registerModules:dict];
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    [[WXSDKManager bridgeMgr] registerModules:dict];
 
 </code></pre></div></div>
 
@@ -302,7 +302,7 @@ WX_EXPORT_METHOD(@selector(createBody:))
 
 <p>最后需要自己callNative的回调，当JS调用时就会传值到这里</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerCallNative:(WXJSCallNative)callNative
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- (void)registerCallNative:(WXJSCallNative)callNative
 {
     NSInteger (^callNativeBlock)(JSValue *, JSValue *, JSValue *) = ^(JSValue *instance, JSValue *tasks, JSValue *callback){
         NSString *instanceId = [instance toString];

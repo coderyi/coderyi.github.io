@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>iOS的音频简介</title>
+    <title>iOS与Android的音频互通</title>
 
     <meta name="viewport" content="width=device-width">
     <meta name="description" content="">
@@ -12,7 +12,7 @@
     
     
 
-    <link rel="canonical" href="http://localhost:4000/posts/iOS_audio/">
+    <link rel="canonical" href="http://localhost:4000/posts/iOS_android_audio/">
     <link rel="icon" type="image/png" href="/images/logo.png">
 
     <!-- Custom CSS -->
@@ -31,7 +31,7 @@
 
   <div class="site-title">
     
-    <h4 class="entry-title"><a href="/posts/iOS_audio/">iOS的音频简介</a></h4>
+    <h4 class="entry-title"><a href="/posts/iOS_android_audio/">iOS与Android的音频互通</a></h4>
     
   </div>
 
@@ -219,6 +219,32 @@
 }
 </pre>
 
+<p><strong><span style="color: #3d82c6;">转码</span></strong></p>
+
+<p>上面我们用iOS录制了一个音频文件，并且录制成了wav格式，然而现在的情况确实安卓不支持wav格式，并且苹果的格式安卓全不支持，看好是全不，不是全部，反过来安卓的格式，苹果基本也不支持。</p>
+
+<p>这里可以让服务器去转码，不过服务器的压力会增加，这里我们可以让客户端进行转码。amr格式的音频文件是安卓系统中默认的录音文件，也算是安卓支持的很方便的音频文件，这里就把iOS录制的wav文件转成amr，我们采用的是libopencore框架。
+关于libopencore，<a title="Jeans" href="http://my.oschina.net/jeans">Jeans</a>有对它进行了一个比较好的Demo，大家可以参考他的Demo，<a title="iOS音频格式AMR和WAV互转（支持64位）" href="http://www.oschina.net/code/snippet_562429_12400">iOS音频格式AMR和WAV互转（支持64位）</a>。</p>
+
+<p>在他的AmrWavConverter代码Demo里面有掩饰这两个转码工作。</p>
+<pre lang="objc" style="background: #E8F2FB;">//转换amr到wav
++ (int)ConvertAmrToWav:(NSString *)aAmrPath wavSavePath:(NSString *)aSavePath{
+
+    if (! DecodeAMRFileToWAVEFile([aAmrPath cStringUsingEncoding:NSASCIIStringEncoding], [aSavePath cStringUsingEncoding:NSASCIIStringEncoding]))
+        return 0;
+
+    return 1;
+}
+
+//转换wav到amr
++ (int)ConvertWavToAmr:(NSString *)aWavPath amrSavePath:(NSString *)aSavePath{
+
+    if (! EncodeWAVEFileToAMRFile([aWavPath cStringUsingEncoding:NSASCIIStringEncoding], [aSavePath cStringUsingEncoding:NSASCIIStringEncoding], 1, 16))
+        return 0;
+
+    return 1;
+}
+</pre>
 <p>转载请附原文地址<a title="https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md" href="https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md">https://github.com/coderyi/blog/blob/master/articles/2015/0608_audio.md</a> 。</p>
 
   		

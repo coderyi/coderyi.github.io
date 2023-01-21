@@ -132,7 +132,7 @@
 <p>组件 就是各种标记组件，比如div 、slider、indicator等
 通过下面这种方式使用</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div&gt;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div&gt;
   &lt;image src="..."&gt;&lt;/image&gt;
   &lt;text&gt;...&lt;/text&gt;
 &lt;/div&gt;
@@ -153,7 +153,7 @@
 
 <p>事件</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  &lt;div onviewappear="viewappear" onviewdisappear="viewdisappear"&gt;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  &lt;div onviewappear="viewappear" onviewdisappear="viewdisappear"&gt;
           ......
   &lt;/div&gt;
 </code></pre></div></div>
@@ -190,13 +190,13 @@
 </code></pre></div></div>
 <p>这时有可能提示</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm WARN babel-loader@6.2.5 requires a peer of babel-core@^6.0.0 but none was installed.
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm WARN babel-loader@6.2.5 requires a peer of babel-core@^6.0.0 but none was installed.
 
 </code></pre></div></div>
 
 <p>你需要再</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm install babel-core
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm install babel-core
 
 </code></pre></div></div>
 
@@ -267,7 +267,7 @@ module.exports = {
 
 <p>不过这个自动产生的webpack.config.js的文件有个坑就是，你添加一个新的we文件，他不会自动build为js文件
 可以手动添加</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  entry: {
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  entry: {
     main: path.join(__dirname, 'src', 'main.we?entry=true'),
     translate: path.join(__dirname, 'src', 'translate.we?entry=true')
   }
@@ -275,7 +275,7 @@ module.exports = {
 
 <p>不过推荐的是自己遍历所有的we文件</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>require('webpack')
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>require('webpack')
 require('weex-loader')
 
 var path = require('path')
@@ -342,8 +342,8 @@ module.exports = {
 <div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 <span class="o">&lt;</span><span class="nx">template</span><span class="o">&gt;</span>
   <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
-    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">子组件</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
-</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">子组件</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">子组件</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">子组件</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
 </span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
 </span><span class="o">&lt;</span><span class="sr">/template</span><span class="err">&gt;
 </span>
@@ -360,7 +360,7 @@ module.exports = {
   <span class="p">}</span>
 
   <span class="nl">methods</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nl">foo</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="na">foo</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
       <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">foo</span><span class="dl">'</span><span class="p">)</span>
     <span class="p">}</span>
   <span class="p">},</span>
@@ -476,7 +476,7 @@ events</p>
 
 <p>获取url的方式可以通过下面这段JS代码</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function getAppBaseUrl(self) {
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function getAppBaseUrl(self) {
     var dir ='examples'
     var url = self.$getConfig().bundleUrl;
     var bundleUrl = url;
@@ -518,7 +518,7 @@ events</p>
 
 <p>1.通过 url 参数传递。</p>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/**
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/**
  * 获取URL参数
  */
 getUrlParam: function (key) {

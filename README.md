@@ -29,38 +29,13 @@ copyright (c) 2016 coderyi.all rights reserved.
 
 [react-native的第一课](http://coderyi.com/posts/react-native_first_lesson/)
 
-### 2015
-
-[Objective-C代码注入－拦截NSURLConnection的消息](http://coderyi.com/posts/objective-c_inject_code/)
-
-[ffmpeg在iOS的使用-iframeextractor源码解析](http://coderyi.com/posts/ffmpeg_iOS_iframeextractor/)
-
-[iOS的音频简介](http://coderyi.com/posts/iOS_audio/)
-
-
-[iOS蓝牙4.0协议简单介绍](http://coderyi.com/posts/CoreBluetooth/)
-
-[iOS的SQLite简单使用](http://coderyi.com/posts/SQLite/)
-
-### 2014
-
-[iOS的xmppframework简介](http://coderyi.com/posts/xmppframework/)
-
-[XMPP协议简单介绍](http://coderyi.com/posts/XMPP/)
-
-[iOS的Socket开发基础](http://coderyi.com/posts/socket/)
-
-[iOS网络请求框架：MKNetWorkKit的使用](http://coderyi.com/posts/MKNetWorkKit/)
-
 ### Contact
 
 邮箱：coderyi@foxmail.com
 
 github: [coderyi](https://github.com/coderyi)
 
-
 stackoverflow:[coderyi](https://stackoverflow.com/users/4834182/coderyi)
-
 
 twitter:[coderyi9](https://twitter.com/coderyi9)
 
